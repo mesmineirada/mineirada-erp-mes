@@ -130,3 +130,22 @@
 | Completar filtro clicável de Pedidos Pendentes no Painel | [x] — rota `/pedidos?status=pendentes` filtra corretamente |
 | Adicionar autocomplete com busca textual para produtos | [x] — campo reutilizável por código ou nome em pedidos e OPs |
 | Corrigir lacunas adicionais e validar persistência, testes e build | [x] — faturamento, pedidos faturados, câmara fria, etiquetas e custos deixaram o placeholder |
+
+## Desempenho, feedback e exportação CSV
+
+| Item | Situação |
+|---|---|
+| Auditar autocomplete e pontos de exportação atuais | [ ] |
+| Implementar busca incremental e paginação no autocomplete | [ ] |
+| Adicionar carregamento e sucesso na edição rápida de OPs | [ ] |
+| Exportar relatórios e listagens de pedidos em CSV | [ ] |
+| Validar downloads, desempenho, testes, build e publicação | [ ] |
+
+## Menu de perfil do usuário
+
+| Item | Situação |
+|---|---|
+| Reproduzir identificação, usuário e perfil no menu | [x] — nome, usuário e perfil exibidos no painel |
+| Adicionar indicador funcional de conta ativa | [x] — status visual Conta ativa |
+| Tornar Manual do sistema e Sair do sistema funcionais | [x] — navegação para Manual e encerramento de sessão |
+| Validar abertura, fechamento, acessibilidade e responsividade | [x] — foco, aria-expanded, clique externo, mobile e build verificados |
