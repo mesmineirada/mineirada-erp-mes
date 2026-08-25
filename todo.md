@@ -53,11 +53,11 @@
 
 | Item | Situação |
 |---|---|
-| Auditar conflitos da atualização full-stack e persistência atual | [ ] |
-| Separar dados mestre de produtos/matérias-primas dos movimentos de estoque | [ ] |
-| Vincular movimentações a item, saldo e histórico no módulo de Estoque | [ ] |
-| Auditar padrões semelhantes em clientes, fornecedores, pedidos e extratos | [ ] |
-| Validar rotas, testes, responsividade e publicação | [ ] |
+| Auditar conflitos da atualização full-stack e persistência atual | [x] — workspace compartilhado validado e rotas revisadas |
+| Separar dados mestre de produtos/matérias-primas dos movimentos de estoque | [x] — Cadastro mantém dados mestre; Estoque mantém histórico e saldo |
+| Vincular movimentações a item, saldo e histórico no módulo de Estoque | [x] — vínculo por código/nome, saldo derivado e detalhe operacional |
+| Auditar padrões semelhantes em clientes, fornecedores, pedidos e extratos | [x] — rotas comerciais revisadas e sem extrato indevido em cadastros |
+| Validar rotas, testes, responsividade e publicação | [x] — check, testes, build e preview verificados |
 
 ## Persistência real compartilhada — execução autorizada
 
@@ -158,3 +158,21 @@
 | Implementar navegação por teclado no menu do usuário | [x] — setas, Home, End e Escape com foco gerenciado |
 | Carregar dinamicamente nome, usuário e perfil | [x] — dados derivados do usuário autenticado em todas as sessões |
 | Validar rotas, foco, responsividade, testes e build | [x] — rota Manual, foco acessível, mobile, check/test/build aprovados |
+
+## Auditoria integral do sistema
+
+| Item | Situação |
+|---|---|
+| Mapear todos os menus e rotas | [x] — hrefs confrontados com o roteamento de App.tsx |
+| Classificar telas completas, vazias e genéricas | [x] — lacunas localizadas em monitor, apontamento, rastreabilidade e relatórios |
+| Auditar vínculos entre produtos, pedidos, OPs, lotes, estoque e manutenção | [x] — vínculos operacionais e fontes de dados corrigidos |
+| Auditar CRUD, persistência compartilhada e permissões | [x] — mutations do workspace, fallback e validações revisados |
+| Corrigir inconsistências e validar todos os fluxos | [x] — monitor, apontamento, rastreabilidade e CSV corrigidos; check/test/build aprovados |
+
+## Auditoria complementar — apontamento, monitoramento e relatórios
+
+| Item | Situação |
+|---|---|
+| Corrigir monitores para usar OPs e apontamentos persistidos | [x] — indicadores e cartões setoriais derivados de OPs/apontamentos |
+| Persistir métricas de apontamentos e refletir indicadores por setor | [x] — pesos, perdas e temperatura gravados no workspace |
+| Validar rastreabilidade por lote e exportação CSV real | [x] — consulta por lote/OP e download CSV implementados e compilados |
