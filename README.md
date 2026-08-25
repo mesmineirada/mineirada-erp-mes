@@ -104,3 +104,9 @@ O Dashboard passou a exibir KPIs derivados dos cadastros, percentuais somente qu
 O cabeçalho autenticado possui alternância acessível entre modo claro e modo escuro. A preferência é persistida no navegador, respeita o contraste do tema âmbar/carvão e mantém foco visível para navegação por teclado.
 
 Na consulta pública, o usuário pode selecionar uma imagem do Código QR ou abrir a câmera em dispositivos compatíveis. A leitura usa `BarcodeDetector` quando disponível e `jsQR` como fallback para imagens, exibindo estados de análise, sucesso e erro. Depois que um pedido é localizado, o sistema gera um Código QR real para a URL pública correspondente e oferece download em PNG ou SVG. O caminho-base do GitHub Pages é incorporado automaticamente ao código exportado.
+
+## Correção da tela de Estoque de Matéria-Prima
+
+A rota `Estoques > Matéria-Prima` deixou de usar o estado genérico de módulo não implementado. Ela agora lista os registros reais de `data.materials`, calcula o saldo a partir do cadastro atualizado, identifica itens abaixo do mínimo e exibe a última movimentação vinculada por código ou nome do item.
+
+As movimentações registradas em `Almoxarifado > Movimentações` continuam atualizando o campo de estoque do cadastro. A nova tela reflete automaticamente essas alterações, oferece busca e filtro por situação e mantém atalhos para registrar movimentações ou abrir o cadastro da matéria-prima. Nenhum dado demonstrativo foi adicionado.

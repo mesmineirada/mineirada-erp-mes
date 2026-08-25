@@ -29,3 +29,12 @@
 | Adicionar carregamento e feedback visual para gerar/escanear QR | [x] |
 | Exportar Código QR como PNG e SVG | [x] |
 | Validar responsividade, acessibilidade e build | [x] |
+
+## Correção solicitada em vídeo
+
+| Item | Situação |
+|---|---|
+| Analisar o vídeo enviado e identificar o problema | [x] — Estoques > Matéria-Prima permanece vazio apesar de cadastro e movimentação |
+| Localizar o fluxo correspondente no projeto | [x] — rota `/estoque/materia-prima` estava usando placeholder |
+| Implementar a correção solicitada | [x] — listagem integrada de materiais, saldos, mínimos e movimentações |
+| Validar responsividade, build e publicação | [x] — desktop/mobile, `pnpm check` e `pnpm build` aprovados |
