@@ -1,42 +1,331 @@
-import { Toaster } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import NotFound from "@/pages/NotFound";
-import { Route, Switch } from "wouter";
-import ErrorBoundary from "./components/ErrorBoundary";
-import { ThemeProvider } from "./contexts/ThemeContext";
-import Home from "./pages/Home";
+/*
+ * Réplica fiel do Mineirada ERP/MES: fundo quente, primário âmbar industrial,
+ * sidebar carvão, ícones lineares, densidade operacional e rotas mapeadas.
+ */
+import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
+import { useLocation } from "wouter";
+import {
+  Activity,
+  AlertTriangle,
+  Archive,
+  ArrowLeft,
+  ArrowRight,
+  BarChart3,
+  BookOpen,
+  Boxes,
+  CalendarClock,
+  Camera,
+  Check,
+  CheckCircle2,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  CircleDollarSign,
+  CircleUserRound,
+  ClipboardCheck,
+  ClipboardList,
+  Cog,
+  Database,
+  Download,
+  Eye,
+  EyeOff,
+  Factory,
+  FileText,
+  Gauge,
+  HardHat,
+  KeyRound,
+  LayoutDashboard,
+  ListChecks,
+  LogOut,
+  Menu,
+  Minus,
+  Monitor,
+  Moon,
+  MoreHorizontal,
+  PackageCheck,
+  PackageOpen,
+  Pause,
+  Pencil,
+  Play,
+  Plus,
+  QrCode,
+  RefreshCw,
+  Search,
+  Settings2,
+  ShieldCheck,
+  SlidersHorizontal,
+  Snowflake,
+  Sun,
+  Tags,
+  Thermometer,
+  Trash2,
+  Truck,
+  Upload,
+  UserPlus,
+  Users,
+  Warehouse,
+  Wrench,
+  X,
+  type LucideIcon,
+} from "lucide-react";
 
+const LOGO = "/manus-storage/mineirada-logo_10f0eaf8.png";
+const MANUAL_ART = "/manus-storage/mineirada-manual-cover_aa645ff9.png";
+const MONITOR_ART = "/manus-storage/mineirada-monitor-illustration_738fae73.png";
+const OPERATOR_ART = "/manus-storage/mineirada-operator_c6faac08.png";
 
-function Router() {
-  return (
-    <Switch>
-      <Route path={"/"} component={Home} />
-      <Route path={"/404"} component={NotFound} />
-      {/* Final fallback route */}
-      <Route component={NotFound} />
-    </Switch>
-  );
+type Role = "gestor" | "admin" | "gerente" | "operador" | "qualidade" | "manutencao" | "user";
+type MenuItem = { label: string; href?: string; icon: LucideIcon; children?: MenuItem[]; adminOnly?: boolean };
+type RecordItem = Record<string, string | number>;
+
+const roleLabels: Record<Role, string> = { gestor: "Gestor", admin: "Administrador", gerente: "Gerente", operador: "Operador", qualidade: "Qualidade", manutencao: "Manutenção", user: "Consulta" };
+
+const menuItems: MenuItem[] = [
+  { label: "Dashboard", href: "/", icon: LayoutDashboard },
+  { label: "Manual de uso", href: "/manual", icon: BookOpen },
+  { label: "Cadastros", icon: Archive, children: [
+    { label: "Matérias-primas", href: "/cadastros/materias-primas", icon: Boxes },
+    { label: "Suprimentos", href: "/cadastros/embalagens", icon: PackageOpen },
+    { label: "Fornecedores", href: "/cadastros/fornecedores", icon: Truck },
+    { label: "Clientes", href: "/cadastros/clientes", icon: Users },
+    { label: "Funcionários", href: "/cadastros/funcionarios", icon: HardHat },
+    { label: "Máquinas", href: "/cadastros/maquinas", icon: Cog },
+    { label: "Produtos", href: "/cadastros/produtos", icon: PackageCheck },
+  ]},
+  { label: "Almoxarifado", icon: Warehouse, children: [
+    { label: "Visão Geral", href: "/estoque", icon: LayoutDashboard },
+    { label: "Requisições de MP", href: "/almoxarifado/requisicoes", icon: ClipboardList },
+    { label: "Movimentações", href: "/estoque/movimentacoes", icon: ArrowRight },
+    { label: "Lotes", href: "/estoque/lotes", icon: Tags },
+  ]},
+  { label: "Estoques", icon: Boxes, children: [
+    { label: "Visão Geral", href: "/estoque/visao-geral", icon: LayoutDashboard },
+    { label: "Matéria-Prima", href: "/estoque/materia-prima", icon: Boxes },
+    { label: "Câmara Fria", href: "/estoque/acabado", icon: Snowflake },
+    { label: "Embalagens", href: "/estoque/embalagens", icon: PackageOpen },
+  ]},
+  { label: "Engenharia", icon: Settings2, children: [{ label: "Receitas / BOM", href: "/engenharia/receitas", icon: ListChecks }] },
+  { label: "Pedidos", href: "/pedidos", icon: ClipboardList },
+  { label: "Vendas", icon: CircleDollarSign, children: [
+    { label: "Faturamento", href: "/vendas/faturamento", icon: FileText },
+    { label: "Pedidos Faturados", href: "/vendas/pedidos-faturados", icon: CheckCircle2 },
+  ]},
+  { label: "Etiquetas", href: "/etiquetas", icon: Tags },
+  { label: "Produção", icon: Factory, children: [
+    { label: "Ordens de Produção", href: "/producao/ordens", icon: ClipboardList },
+    { label: "Fluxo por OP", href: "/producao/fluxo", icon: Factory },
+    { label: "Monitor Geral", href: "/monitor", icon: Monitor },
+  ]},
+  { label: "Apontamento", icon: Activity, children: [
+    { label: "Separação MP", href: "/apontamento/separacao_mp", icon: PackageOpen },
+    { label: "Cozinha", href: "/apontamento/cozinha", icon: Factory },
+    { label: "Corte", href: "/apontamento/corte", icon: Activity },
+    { label: "Túnel", href: "/apontamento/tunel", icon: Snowflake },
+    { label: "Envasadora", href: "/apontamento/envasadora", icon: PackageCheck },
+    { label: "Câmara Fria", href: "/apontamento/camara_fria", icon: Snowflake },
+    { label: "Expedição", href: "/apontamento/expedicao", icon: Truck },
+  ]},
+  { label: "Monitores", icon: Monitor, children: [
+    { label: "Produção Completa", href: "/monitor", icon: Monitor },
+    { label: "Separação MP", href: "/monitor/separacao_mp", icon: PackageOpen },
+    { label: "Cozinha", href: "/monitor/cozinha", icon: Factory },
+    { label: "Corte", href: "/monitor/corte", icon: Activity },
+    { label: "Túnel", href: "/monitor/tunel", icon: Snowflake },
+    { label: "Envasadora", href: "/monitor/envasadora", icon: PackageCheck },
+    { label: "Câmara Fria", href: "/monitor/camara_fria", icon: Snowflake },
+    { label: "Expedição", href: "/monitor/expedicao", icon: Truck },
+  ]},
+  { label: "Qualidade", icon: ShieldCheck, children: [
+    { label: "Checklists", href: "/qualidade/checklists", icon: ListChecks },
+    { label: "Não Conformidades", href: "/qualidade/nao-conformidades", icon: AlertTriangle },
+  ]},
+  { label: "Manutenção", href: "/manutencao", icon: Wrench },
+  { label: "Custos", href: "/custos", icon: CircleDollarSign },
+  { label: "Relatórios", href: "/relatorios", icon: BarChart3 },
+  { label: "Rastreabilidade", href: "/rastreabilidade", icon: Search },
+  { label: "Auditoria", href: "/auditoria", icon: ShieldCheck, adminOnly: true },
+  { label: "App Operador", href: "/operador", icon: Activity },
+  { label: "Usuários", href: "/admin/usuarios", icon: Users, adminOnly: true },
+  { label: "Administração", icon: Database, adminOnly: true, children: [{ label: "Dados e Backup", href: "/admin/dados", icon: Database }] },
+];
+
+const stages = [
+  { key: "separacao_mp", label: "Separação MP", short: "Separação", icon: PackageOpen },
+  { key: "cozinha", label: "Cozinha", short: "Cozinha", icon: Factory },
+  { key: "corte", label: "Corte", short: "Corte", icon: Activity },
+  { key: "tunel", label: "Túnel", short: "Túnel", icon: Snowflake },
+  { key: "envasadora", label: "Envasadora", short: "Envase", icon: PackageCheck },
+  { key: "camara_fria", label: "Câmara Fria", short: "Câmara fria", icon: Snowflake },
+  { key: "expedicao", label: "Expedição", short: "Expedição", icon: Truck },
+];
+
+const stockEntries: Array<[string, string, string, LucideIcon]> = [["Matéria-Prima", "1.842 kg", "Responsável: Almoxarifado", Boxes], ["Câmara Fria (produto acabado)", "486 kg", "Temperatura: -18°C", Snowflake], ["Embalagens", "12.540 un", "Responsável: Suprimentos", PackageOpen ]];
+
+const initialData = {
+  clients: [
+    { code: "CLI001", name: "Supermercado Central", cnpj: "12.345.678/0001-90", phone: "(31) 3333-1020", city: "Belo Horizonte", credit: "R$ 18.000,00" },
+    { code: "CLI002", name: "Empório Mineiro", cnpj: "27.804.192/0001-11", phone: "(31) 3222-4177", city: "Contagem", credit: "R$ 8.500,00" },
+    { code: "CLI003", name: "Rede Bom Preço", cnpj: "04.921.880/0001-63", phone: "(35) 3441-0980", city: "Pouso Alegre", credit: "R$ 12.400,00" },
+  ],
+  suppliers: [
+    { code: "FOR001", name: "Moinhos Gerais Ltda.", cnpj: "18.200.090/0001-22", phone: "(31) 3055-7777", city: "Contagem", contact: "Marina" },
+    { code: "FOR002", name: "Ingredientes Brasil", cnpj: "07.119.201/0001-45", phone: "(11) 4012-3456", city: "São Paulo", contact: "João" },
+  ],
+  products: [
+    { code: "PRD001", name: "Pão de Queijo Tradicional", category: "Congelados", unit: "kg", price: "R$ 18,90", shelf: "180 dias", temp: "-18°C" },
+    { code: "PRD002", name: "Pão de Queijo Recheado", category: "Congelados", unit: "kg", price: "R$ 23,50", shelf: "150 dias", temp: "-18°C" },
+    { code: "PRD003", name: "Mini Pão de Queijo", category: "Congelados", unit: "kg", price: "R$ 20,20", shelf: "180 dias", temp: "-18°C" },
+  ],
+  materials: [
+    { code: "MP001", name: "Polvilho azedo", category: "Amidos", unit: "kg", cost: "R$ 4,80", stock: "1.240 kg", min: "500 kg", status: "Normal" },
+    { code: "MP002", name: "Queijo meia cura", category: "Laticínios", unit: "kg", cost: "R$ 31,20", stock: "168 kg", min: "240 kg", status: "Baixo" },
+    { code: "MP003", name: "Ovos pasteurizados", category: "Laticínios", unit: "kg", cost: "R$ 8,40", stock: "390 kg", min: "180 kg", status: "Normal" },
+    { code: "MP004", name: "Óleo vegetal", category: "Insumos", unit: "L", cost: "R$ 6,10", stock: "92 L", min: "120 L", status: "Baixo" },
+  ],
+  machines: [
+    { code: "MAQ001", name: "Misturador Industrial 01", sector: "Cozinha", brand: "MecFood", model: "MX-400", power: "12 kW", status: "Operacional" },
+    { code: "MAQ002", name: "Envasadora Automática", sector: "Envasadora", brand: "PackSul", model: "EV-20", power: "8 kW", status: "Manutenção" },
+    { code: "MAQ003", name: "Túnel de Congelamento", sector: "Túnel", brand: "FrioTech", model: "TC-80", power: "32 kW", status: "Operacional" },
+  ],
+  orders: [
+    { number: "PED-2026-00041", client: "Supermercado Central", delivery: "28/08/2026", priority: "Alta", total: "R$ 9.420,00", status: "Em Produção" },
+    { number: "PED-2026-00040", client: "Empório Mineiro", delivery: "29/08/2026", priority: "Normal", total: "R$ 4.180,00", status: "Confirmado" },
+    { number: "PED-2026-00039", client: "Rede Bom Preço", delivery: "26/08/2026", priority: "Urgente", total: "R$ 13.760,00", status: "Pronto" },
+  ],
+  lots: [
+    { lot: "LOTE-2026-0821", material: "Polvilho azedo", total: "1.000 kg", remaining: "840 kg", expiry: "21/02/2027", location: "MP • A-02-03", status: "Disponível" },
+    { lot: "LOTE-2026-0818", material: "Queijo meia cura", total: "240 kg", remaining: "168 kg", expiry: "18/10/2026", location: "MP • B-01-02", status: "Disponível" },
+    { lot: "LOTE-2026-0802", material: "Ovos pasteurizados", total: "500 kg", remaining: "0 kg", expiry: "02/09/2026", location: "MP • C-01-01", status: "Consumido" },
+  ],
+};
+
+function usePersistedData() {
+  const [data, setData] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("mineirada_replica_data") || "null") || initialData; } catch { return initialData; }
+  });
+  useEffect(() => { localStorage.setItem("mineirada_replica_data", JSON.stringify(data)); }, [data]);
+  return [data, setData] as const;
 }
 
-// NOTE: About Theme
-// - First choose a default theme according to your design style (dark or light bg), than change color palette in index.css
-//   to keep consistent foreground/background color across components
-// - If you want to make theme switchable, pass `switchable` ThemeProvider and use `useTheme` hook
-
-function App() {
-  return (
-    <ErrorBoundary>
-      <ThemeProvider
-        defaultTheme="light"
-        // switchable
-      >
-        <TooltipProvider>
-          <Toaster />
-          <Router />
-        </TooltipProvider>
-      </ThemeProvider>
-    </ErrorBoundary>
-  );
+function useToast() {
+  const [toast, setToast] = useState<string | null>(null);
+  useEffect(() => { if (!toast) return; const t = window.setTimeout(() => setToast(null), 2800); return () => window.clearTimeout(t); }, [toast]);
+  return { toast, showToast: setToast };
 }
 
-export default App;
+function cn(...values: Array<string | false | undefined>) { return values.filter(Boolean).join(" "); }
+function formatTitle(path: string) {
+  const found = menuItems.flatMap((item) => [item, ...(item.children || [])]).find((item) => item.href === path);
+  return found?.label || (path.startsWith("/apontamento") ? "Apontamento" : path.startsWith("/monitor") ? "Monitor" : "Mineirada ERP + MES");
+}
+
+function Pill({ children, tone = "neutral" }: { children: ReactNode; tone?: "neutral" | "success" | "warning" | "danger" | "info" | "primary" }) {
+  return <span className={cn("pill", `pill-${tone}`)}>{children}</span>;
+}
+
+function MetricCard({ label, value, sub, icon: Icon, tone = "primary" }: { label: string; value: string; sub: string; icon: LucideIcon; tone?: string }) {
+  return <div className="metric-card"><div><div className="eyebrow">{label}</div><strong>{value}</strong><small>{sub}</small></div><span className={cn("metric-icon", `metric-${tone}`)}><Icon size={18} /></span></div>;
+}
+
+function Modal({ title, children, onClose, wide = false }: { title: string; children: ReactNode; onClose: () => void; wide?: boolean }) {
+  return <div className="modal-backdrop" onMouseDown={(e) => e.target === e.currentTarget && onClose()}><div className={cn("modal-card", wide && "modal-wide")}><div className="modal-head"><h3>{title}</h3><button className="icon-button" onClick={onClose} aria-label="Fechar"><X size={18} /></button></div>{children}</div></div>;
+}
+
+function Field({ label, children, wide = false }: { label: string; children: ReactNode; wide?: boolean }) {
+  return <label className={cn("field", wide && "field-wide")}><span>{label}</span>{children}</label>;
+}
+
+function TextInput({ value, onChange, placeholder, type = "text" }: { value?: string | number; onChange?: (v: string) => void; placeholder?: string; type?: string }) {
+  return <input className="input" type={type} value={value ?? ""} placeholder={placeholder} onChange={(e) => onChange?.(e.target.value)} />;
+}
+
+function SelectInput({ value, onChange, children }: { value?: string; onChange?: (v: string) => void; children: ReactNode }) {
+  return <select className="input select-input" value={value ?? ""} onChange={(e) => onChange?.(e.target.value)}>{children}</select>;
+}
+
+function Table({ columns, rows, empty = "Nenhum registro.", onEdit, onDelete }: { columns: string[]; rows: Array<Array<ReactNode>>; empty?: string; onEdit?: (index: number) => void; onDelete?: (index: number) => void }) {
+  return <div className="table-wrap"><table><thead><tr>{columns.map((c) => <th key={c}>{c}</th>)}{(onEdit || onDelete) && <th>Ações</th>}</tr></thead><tbody>{rows.length === 0 ? <tr><td colSpan={columns.length + 1} className="empty-row">{empty}</td></tr> : rows.map((row, i) => <tr key={i}>{row.map((cell, j) => <td key={j}>{cell}</td>)}{(onEdit || onDelete) && <td><div className="row-actions">{onEdit && <button className="icon-button" onClick={() => onEdit(i)} aria-label="Editar"><Pencil size={15} /></button>}{onDelete && <button className="icon-button danger-icon" onClick={() => onDelete(i)} aria-label="Excluir"><Trash2 size={15} /></button>}</div></td>}</tr>)}</tbody></table></div>;
+}
+
+function PageHeader({ title, description, children }: { title: string; description?: string; children?: ReactNode }) {
+  return <div className="page-header"><div><h1>{title}</h1>{description && <p>{description}</p>}</div>{children && <div className="header-actions">{children}</div>}</div>;
+}
+
+function Button({ children, variant = "primary", onClick, type = "button", icon: Icon, disabled = false }: { children: ReactNode; variant?: "primary" | "outline" | "ghost" | "danger"; onClick?: () => void; type?: "button" | "submit"; icon?: LucideIcon; disabled?: boolean }) {
+  return <button type={type} disabled={disabled} className={cn("button", `button-${variant}`)} onClick={onClick}>{Icon && <Icon size={15} />}{children}</button>;
+}
+
+function LoginPage({ onLogin }: { onLogin: (role: Role) => void }) {
+  const [username, setUsername] = useState(""); const [password, setPassword] = useState(""); const [show, setShow] = useState(false); const [publicOpen, setPublicOpen] = useState(false); const [error, setError] = useState(""); const [loading, setLoading] = useState(false);
+  const submit = (e: FormEvent) => { e.preventDefault(); setError(""); setLoading(true); window.setTimeout(() => { if (username.toUpperCase() === "SOUSA" && password === "RGMS1234") { localStorage.setItem("mineirada_session_v1", "replica-session"); localStorage.setItem("mineirada_user_profile", JSON.stringify({ username: "SOUSA", name: "Sousa", role: "gestor" })); onLogin("gestor"); } else { setError("Usuário ou senha inválidos."); setLoading(false); } }, 350); };
+  return <div className="login-page"><div className="login-brand"><img src={LOGO} alt="Mineirada" /><h1>Mineirada ERP + MES</h1><p>Sistema Industrial de Gestão</p></div><div className="login-card"><form onSubmit={submit}><Field label="Usuário"><div className="input-with-icon"><CircleUserRound size={15} /><TextInput value={username} onChange={(v) => setUsername(v.toUpperCase())} placeholder="USUÁRIO" /></div></Field><Field label="Senha"><div className="input-with-icon"><KeyRound size={15} /><TextInput value={password} onChange={setPassword} placeholder="••••••••" type={show ? "text" : "password"} /><button type="button" className="input-action" onClick={() => setShow(!show)}>{show ? <EyeOff size={16} /> : <Eye size={16} />}</button></div></Field>{error && <div className="error-banner">{error}</div>}<Button type="submit" disabled={loading} icon={loading ? RefreshCw : LogOut}>{loading ? "Entrando..." : "Entrar"}</Button></form><div className="login-divider" /><button className="public-toggle" onClick={() => setPublicOpen(!publicOpen)}><span><Search size={15} />Consultar pedido sem login</span>{publicOpen ? <ChevronUpIcon /> : <ChevronDown size={15} />}</button>{publicOpen && <PublicLookup compact />}</div><div className="login-note">Acesso liberado apenas para usuários cadastrados no sistema.<br />Esqueceu a senha? Procure o gestor.</div></div>;
+}
+function ChevronUpIcon() { return <ChevronDown size={15} style={{ transform: "rotate(180deg)" }} />; }
+
+function PublicLookup({ compact = false }: { compact?: boolean }) {
+  const [, navigate] = useLocation(); const [name, setName] = useState(""); const [order, setOrder] = useState(""); const [searched, setSearched] = useState(false); const [error, setError] = useState("");
+  const submit = (e: FormEvent) => { e.preventDefault(); if (!name.trim()) { setError("Informe seu nome para consultar o pedido."); return; } if (!order.trim()) { setError("Digite o número do pedido ou envie uma imagem do QR Code."); return; } setError(""); setSearched(true); };
+  return <div className={cn("public-lookup", compact && "public-lookup-compact")}><div className="lookup-title"><ClipboardList size={18} /><div><h3>Consultar pedido</h3>{!compact && <p>Informe seu nome e use o número do pedido ou uma imagem do QR Code. Não é necessário fazer login.</p>}</div></div><form onSubmit={submit}><Field label="Seu nome *"><TextInput value={name} onChange={setName} placeholder="Como podemos identificar você?" /></Field><Field label="Número do pedido ou conteúdo do QR Code"><div className="lookup-row"><TextInput value={order} onChange={setOrder} placeholder="Ex.: PED-2026-00001" /><Button variant="outline" icon={QrCode}>QR por imagem</Button></div></Field>{error && <div className="error-banner">{error}</div>}<Button type="submit" icon={Search}>Consultar pedido</Button></form>{searched && <div className="lookup-result"><div className="result-top"><div><span className="eyebrow">Pedido localizado</span><strong>{order.toUpperCase()}</strong><p>Supermercado Central</p></div><Pill tone="success">Em produção</Pill></div><div className="result-grid"><div><span>Localização atual</span><b>Cozinha</b></div><div><span>Previsão de entrega</span><b>28/08/2026</b></div></div><div className="progress-line"><span style={{ width: "42%" }} /></div><div className="stage-track">{stages.slice(0, 5).map((s, i) => <div key={s.key} className={cn("track-stage", i < 2 && "done", i === 2 && "active")}><span>{i < 2 ? <Check size={12} /> : i + 1}</span><small>{s.short}</small></div>)}</div><Button variant="outline" onClick={() => navigate(`/consulta-pedido/${order}`)} icon={ArrowRight}>Acompanhar pedido</Button></div>}</div>;
+}
+
+function Dashboard() {
+  const [, navigate] = useLocation();
+  return <div className="page-content"><PageHeader title="Dashboard" description="Visão geral da produção em tempo real · atualiza a cada 30s"><Button variant="outline" icon={ClipboardList} onClick={() => navigate("/almoxarifado/requisicoes")}>Requisições <span className="count-badge">3</span></Button><Button variant="outline" icon={Database}>Carregar Dados Iniciais</Button></PageHeader><div className="metrics-grid six"><MetricCard label="OPs Abertas" value="8" sub="em andamento" icon={ClipboardList} /><MetricCard label="OPs Atrasadas" value="2" sub="requerem atenção" icon={AlertTriangle} tone="danger" /><MetricCard label="Produção Hoje" value="1.248 kg" sub="saída expedição" icon={Factory} tone="success" /><MetricCard label="Pedidos Pend." value="6" sub="aguardando" icon={Truck} tone="info" /><MetricCard label="Alertas Estoque" value="4" sub="abaixo do mínimo" icon={Boxes} tone="warning" /><MetricCard label="OMs Abertas" value="3" sub="manutenção" icon={Wrench} tone="danger" /></div><div className="metrics-grid four"><div className="percent-card"><span>OEE</span><strong>78,4%</strong><small>Eficiência Global</small><div className="progress-bar"><i style={{ width: "78%" }} /></div></div><div className="percent-card"><span>Disponibilidade</span><strong className="green-text">91,2%</strong><small>Tempo disponível</small><div className="progress-bar"><i className="green-bar" style={{ width: "91%" }} /></div></div><div className="percent-card"><span>Performance</span><strong className="blue-text">83,8%</strong><small>Velocidade real/teórica</small><div className="progress-bar"><i className="blue-bar" style={{ width: "83%" }} /></div></div><div className="percent-card"><span>Qualidade</span><strong className="amber-text">96,6%</strong><small>1 - taxa de perda</small><div className="progress-bar"><i className="amber-bar" style={{ width: "96%" }} /></div></div></div><div className="dashboard-grid"><div className="panel chart-panel"><div className="panel-head"><h3>Produção Semanal — saída expedição (kg)</h3><button className="icon-button"><MoreHorizontal size={17} /></button></div><div className="bar-chart">{[["Seg",720],["Ter",980],["Qua",820],["Qui",1120],["Sex",1248],["Sáb",640],["Dom",380]].map(([day, value]) => <div className="bar-col" key={day as string}><span>{value}</span><i style={{ height: `${Number(value) / 10}px` }} /><small>{day}</small></div>)}</div></div><div className="panel"><div className="panel-head"><h3>Perdas por setor</h3><span className="eyebrow">Hoje</span></div><div className="loss-list">{[["Cozinha", "18,4 kg", "2,1%"], ["Corte", "9,2 kg", "1,4%"], ["Envasadora", "6,1 kg", "0,9%"], ["Expedição", "2,8 kg", "0,4%"]].map(([a,b,c]) => <div className="loss-row" key={a}><span>{a}</span><b>{b}</b><Pill tone="warning">{c}</Pill></div>)}</div></div></div><div className="dashboard-grid lower"><div className="panel"><div className="panel-head"><h3>Ordens de Produção Recentes</h3><button className="text-link" onClick={() => navigate("/producao/ordens")}>Ver todas</button></div><Table columns={["OP", "Produto", "Lote", "Status"]} rows={[[<span className="mono">OP-2026-0018</span>, "Pão de Queijo Tradicional", "LOTE-0821", <Pill tone="info">Em produção</Pill>],[<span className="mono">OP-2026-0017</span>, "Pão de Queijo Recheado", "LOTE-0820", <Pill tone="success">Pronta</Pill>],[<span className="mono">OP-2026-0016</span>, "Mini Pão de Queijo", "LOTE-0818", <Pill tone="warning">Pausada</Pill>]]} /></div><div className="panel alert-panel"><div className="panel-head"><h3>Alertas de Estoque</h3><Pill tone="danger">4 itens</Pill></div>{["Queijo meia cura", "Óleo vegetal", "Caixa 5 kg", "Filme termoencolhível"].map((item, i) => <div className="alert-row" key={item}><AlertTriangle size={15} /><span>{item}<small>Saldo abaixo do mínimo</small></span><b>{["168 kg", "92 L", "220 un", "38 kg"][i]}</b></div>)}</div></div></div>;
+}
+
+function CrudPage({ kind, title, description, columns, records, setRecords, fields }: { kind: string; title: string; description: string; columns: string[]; records: RecordItem[]; setRecords: (value: RecordItem[]) => void; fields: string[] }) {
+  const [query, setQuery] = useState(""); const [modal, setModal] = useState(false); const [editing, setEditing] = useState<number | null>(null); const [form, setForm] = useState<RecordItem>({}); const { showToast } = useToast();
+  const filtered = records.filter((r) => Object.values(r).join(" ").toLowerCase().includes(query.toLowerCase()));
+  const openCreate = () => { setEditing(null); setForm(Object.fromEntries(fields.map((f) => [f, ""]))); setModal(true); };
+  const openEdit = (index: number) => { const realIndex = records.indexOf(filtered[index]); setEditing(realIndex); setForm({ ...records[realIndex] }); setModal(true); };
+  const save = (e: FormEvent) => { e.preventDefault(); const next = [...records]; if (editing === null) next.unshift(form); else next[editing] = form; setRecords(next); setModal(false); showToast(editing === null ? `${kind} criado!` : "Atualizado!"); };
+  const remove = (index: number) => { const realIndex = records.indexOf(filtered[index]); if (!window.confirm("Confirmar exclusão lógica?")) return; setRecords(records.filter((_, i) => i !== realIndex)); showToast("Removido!"); };
+  const rowFor = (r: RecordItem) => columns.map((col) => r[col.toLowerCase().replaceAll(" ", "_")] ?? r[col.toLowerCase()] ?? "—");
+  return <div className="page-content"><PageHeader title={title} description={description}><Button icon={Plus} onClick={openCreate}>{title.startsWith("Forne") ? "Nova" : "Novo"}</Button></PageHeader><div className="toolbar"><div className="search-box"><Search size={16} /><input placeholder="Buscar..." value={query} onChange={(e) => setQuery(e.target.value)} /></div><span className="record-count">{filtered.length} registros</span></div><div className="panel table-panel"><Table columns={columns} rows={filtered.map(rowFor)} onEdit={openEdit} onDelete={remove} empty="Nenhum registro." /></div>{modal && <Modal title={`${editing === null ? "Novo" : "Editar"} ${kind}`} onClose={() => setModal(false)}><form className="modal-form" onSubmit={save}><div className="form-grid">{fields.map((field) => <Field key={field} label={`${field.replaceAll("_", " ")} ${field === "code" || field === "name" ? "*" : ""}`}><TextInput value={form[field] as string} onChange={(v) => setForm({ ...form, [field]: v })} placeholder={field === "code" ? "CLI001" : ""} /></Field>)}</div><div className="modal-actions"><Button variant="outline" onClick={() => setModal(false)}>Cancelar</Button><Button type="submit" icon={Check}>{editing === null ? "Criar" : "Salvar"}</Button></div></form></Modal>}{useToastPlaceholder(showToast)}</div>;
+}
+function useToastPlaceholder(_: (message: string) => void) { return null; }
+
+function OrdersPage({ data, setData }: { data: typeof initialData; setData: (value: typeof initialData) => void }) {
+  const [query, setQuery] = useState(""); const [status, setStatus] = useState("Todos"); const [modal, setModal] = useState(false); const { showToast } = useToast();
+  const rows = data.orders.filter((o) => `${o.number} ${o.client} ${o.status}`.toLowerCase().includes(query.toLowerCase()) && (status === "Todos" || o.status === status));
+  return <div className="page-content"><PageHeader title="Pedidos" description="Pedidos de clientes e programação de entrega"><Button icon={Plus} onClick={() => setModal(true)}>Novo Pedido</Button></PageHeader><div className="toolbar"><div className="search-box"><Search size={16} /><input placeholder="Buscar..." value={query} onChange={(e) => setQuery(e.target.value)} /></div><SelectInput value={status} onChange={setStatus}><option>Todos</option><option>Rascunho</option><option>Confirmado</option><option>Em Produção</option><option>Pronto</option><option>Expedido</option><option>Cancelado</option></SelectInput></div><div className="panel table-panel"><Table columns={["Número", "Cliente", "Entrega", "Prioridade", "Valor Total", "Status"]} rows={rows.map((o) => [<span className="mono">{o.number}</span>, o.client, o.delivery, <Pill tone={o.priority === "Urgente" ? "danger" : o.priority === "Alta" ? "warning" : "neutral"}>{o.priority}</Pill>, o.total, <Pill tone={o.status === "Em Produção" ? "info" : o.status === "Pronto" ? "success" : "neutral"}>{o.status}</Pill>])} onEdit={() => setModal(true)} onDelete={() => showToast("Removido!")} /></div>{modal && <OrderModal onClose={() => setModal(false)} onSave={(newOrder) => { setData({ ...data, orders: [newOrder, ...data.orders] }); setModal(false); showToast("Pedido criado!"); }} />}</div>;
+}
+function OrderModal({ onClose, onSave }: { onClose: () => void; onSave: (order: typeof initialData.orders[number]) => void }) { const [client, setClient] = useState("Supermercado Central"); const [priority, setPriority] = useState("Normal"); const [date, setDate] = useState("30/08/2026"); const [qty, setQty] = useState("100"); return <Modal title="Novo Pedido" onClose={onClose} wide><form className="modal-form" onSubmit={(e) => { e.preventDefault(); onSave({ number: `PED-2026-000${Math.floor(Math.random() * 90 + 10)}`, client, delivery: date, priority, total: `R$ ${(Number(qty) * 18.9).toFixed(2).replace(".", ",")}`, status: "Rascunho" }); }}><div className="form-grid"><Field label="Cliente *"><SelectInput value={client} onChange={setClient}><option>Supermercado Central</option><option>Empório Mineiro</option><option>Rede Bom Preço</option></SelectInput></Field><Field label="Prioridade"><SelectInput value={priority} onChange={setPriority}><option>Baixa</option><option>Normal</option><option>Alta</option><option>Urgente</option></SelectInput></Field><Field label="Data de Entrega"><TextInput value={date} onChange={setDate} type="date" /></Field></div><div className="form-subsection"><div className="subsection-head"><h4>Itens do Pedido</h4><Button variant="outline" icon={Plus}>Adicionar item</Button></div><div className="order-item"><SelectInput><option>Pão de Queijo Tradicional</option><option>Pão de Queijo Recheado</option></SelectInput><TextInput value={qty} onChange={setQty} type="number" /><span className="unit-tag">kg</span><button className="icon-button danger-icon"><Trash2 size={15} /></button></div></div><Field label="Observações" wide><textarea className="input textarea" placeholder="Observações do pedido" /></Field><div className="modal-actions"><Button variant="outline" onClick={onClose}>Cancelar</Button><Button type="submit" icon={Check}>Criar Pedido</Button></div></form></Modal>; }
+
+function InventoryOverview() { const [, navigate] = useLocation(); return <div className="page-content"><PageHeader title="Estoque de Matéria-Prima" description="Visão geral e alertas"><Button icon={ArrowRight} onClick={() => navigate("/estoque/movimentacoes")}>Registrar movimentação</Button></PageHeader><div className="metrics-grid three"><MetricCard label="Total de Itens" value="24" sub="fichas ativas" icon={Boxes} /><MetricCard label="Abaixo do Mínimo" value="4" sub="requerem atenção" icon={AlertTriangle} tone="danger" /></div><div className="panel"><div className="panel-head"><h3>Alertas de Estoque Baixo</h3><Pill tone="danger">4 alertas</Pill></div><Table columns={["Código", "Nome", "Categoria", "Unidade", "Estoque Atual", "Estoque Mínimo", "Déficit"]} rows={[["MP002", "Queijo meia cura", "Laticínios", "kg", "168 kg", "240 kg", <span className="danger-text">-72 kg</span>],["MP004", "Óleo vegetal", "Insumos", "L", "92 L", "120 L", <span className="danger-text">-28 L</span>],["EMB012", "Caixa 5 kg", "Caixas", "un", "220 un", "300 un", <span className="danger-text">-80 un</span>],["EMB017", "Filme termoencolhível", "Filmes", "kg", "38 kg", "60 kg", <span className="danger-text">-22 kg</span>]]} /></div></div>; }
+
+function StockHub() { const [, navigate] = useLocation(); return <div className="page-content"><PageHeader title="Estoques" description="Gerencie de forma completa matérias-primas, produtos acabados e suprimentos. Cadastros integrados com EAN, NCM e pesos."><Button icon={Plus}>Cadastrar produto acabado (câmara fria)</Button></PageHeader><div className="stock-cards"><div className="stock-card stock-primary" onClick={() => navigate("/estoque/materia-prima")}><span><Boxes size={20} /></span><div><small>Matérias-primas</small><strong>1.842 kg</strong><p>Gestão Completa</p></div></div><div className="stock-card stock-green" onClick={() => navigate("/estoque/acabado")}><span><Snowflake size={20} /></span><div><small>Produto Acabado</small><strong>486 kg</strong><p>Pronto p/ Venda</p></div></div><div className="stock-card stock-orange" onClick={() => navigate("/estoque/embalagens")}><span><PackageOpen size={20} /></span><div><small>Suprimentos</small><strong>12.540 un</strong><p>Insumos & Embalagem</p></div></div></div><div className="section-title"><h2>Fichas de estoque</h2><span>3 estoques ativos</span></div><div className="stock-grid">{stockEntries.map(([name, value, sub, Icon]) => <div className="panel stock-list-card" key={name as string} onClick={() => navigate("/estoques/MP")}><div className="stock-list-icon"><Icon size={19} /></div><div><h3>{name}</h3><p>{sub}</p><strong>{value}</strong><small>fichas em estoque</small></div><ChevronRight size={17} /></div>)}</div><div className="panel"><div className="panel-head"><h3>Últimas movimentações entre setores</h3><button className="text-link">Ver todas</button></div><Table columns={["Item", "Tipo", "Quantidade", "Observação", "Data"]} rows={[["Queijo meia cura", <Pill tone="info">Transferência</Pill>, "40 kg", "Abastecimento Cozinha", "25/08/2026 14:20"],["Pão de Queijo Tradicional", <Pill tone="success">Entrada</Pill>, "180 kg", "Produção finalizada", "25/08/2026 13:48"],["Caixa 5 kg", <Pill tone="warning">Baixa</Pill>, "60 un", "OP-2026-0018", "25/08/2026 12:32"]]} /></div></div>; }
+
+function RequisitionsPage() { const [filter, setFilter] = useState("Todas"); const [, navigate] = useLocation(); const [detail, setDetail] = useState(false); const { showToast } = useToast(); const requests = [["REQ-2026-0018", "OP-2026-0018 · Pão de Queijo Tradicional", "420 kg", "Pendente", "25/08/2026"], ["REQ-2026-0017", "OP-2026-0017 · Pão de Queijo Recheado", "280 kg", "Parcial", "24/08/2026"], ["REQ-2026-0016", "OP-2026-0016 · Mini Pão de Queijo", "180 kg", "Atendida", "24/08/2026"]]; const visible = requests.filter((r) => filter === "Todas" || r[3] === filter); return <div className="page-content"><PageHeader title="Almoxarifado — Requisições de Materiais" description="Geradas automaticamente a cada Ordem de Produção, com as quantidades da receita"><Button variant="outline" icon={ClipboardCheck}>3 em aberto</Button></PageHeader><div className="toolbar"><div className="search-box"><Search size={16} /><input placeholder="Buscar por requisição ou OP..." /></div><SelectInput value={filter} onChange={setFilter}><option>Todas</option><option>Pendente</option><option>Parcial</option><option>Atendida</option><option>Cancelada</option></SelectInput></div><div className="panel table-panel"><Table columns={["Requisição", "Produto", "Qtd Planejada", "Situação", "Criada em"]} rows={visible.map((r) => [<button className="link-button" onClick={() => setDetail(true)}>{r[0]}</button>, r[1], r[2], <Pill tone={r[3] === "Atendida" ? "success" : r[3] === "Parcial" ? "info" : "warning"}>{r[3]}</Pill>, r[4]])} /></div>{detail && <Modal title="Requisição REQ-2026-0018" onClose={() => setDetail(false)} wide><div className="request-summary"><div><span>Ordem de Produção</span><b>OP-2026-0018</b></div><div><span>Lote</span><b>LOTE-2026-0821</b></div><div><span>Qtd planejada</span><b>420 kg</b></div><div><span>Situação</span><Pill tone="warning">Pendente</Pill></div></div><div className="warning-callout"><AlertTriangle size={17} />A OP ainda não foi autorizada — a separação de matéria-prima e suprimentos está bloqueada.<Button variant="outline" icon={ShieldCheck} onClick={() => showToast("OP-2026-0018 autorizada! Separação liberada.")}>Autorizar OP</Button></div><div className="subsection-head"><h4>Itens da requisição</h4><Button variant="outline" icon={Plus}>Adicionar item</Button></div><div className="request-item"><div><b>Polvilho azedo</b><small>Matéria-prima · Necessário 260 kg · Estoque 1.240 kg</small></div><strong>260 kg</strong><Button variant="outline" icon={PackageCheck} onClick={() => showToast("Material separado e baixado do estoque!")}>Baixar</Button></div><div className="request-item"><div><b>Queijo meia cura</b><small>Matéria-prima · Necessário 120 kg · Estoque 168 kg</small></div><strong>120 kg</strong><Button variant="outline" icon={PackageCheck}>Baixar</Button></div><div className="modal-actions"><Button variant="danger" icon={X}>Cancelar requisição</Button><Button icon={PackageCheck} onClick={() => showToast("Requisição atendida por completo!")}>Separar tudo</Button></div></Modal>}</div>; }
+
+function LotsPage({ data, setData }: { data: typeof initialData; setData: (value: typeof initialData) => void }) { const [query, setQuery] = useState(""); const [modal, setModal] = useState(false); const filtered = data.lots.filter((l) => Object.values(l).join(" ").toLowerCase().includes(query.toLowerCase())); return <div className="page-content"><PageHeader title="Lotes de Estoque" description="Controle de validade, localização e situação dos lotes"><Button icon={Plus} onClick={() => setModal(true)}>Novo Lote</Button></PageHeader><div className="toolbar"><div className="search-box"><Search size={16} /><input placeholder="Buscar lote..." value={query} onChange={(e) => setQuery(e.target.value)} /></div><SelectInput><option>Todos</option><option>Disponível</option><option>Bloqueado</option><option>Quarentena</option><option>Consumido</option><option>Vencido</option></SelectInput></div><div className="panel table-panel"><Table columns={["Lote", "Matéria-prima", "Qtd Total", "Qtd Restante", "Validade", "Localização", "Status"]} rows={filtered.map((l) => [<span className="mono">{l.lot}</span>, l.material, l.total, l.remaining, l.expiry, l.location, <Pill tone={l.status === "Disponível" ? "success" : l.status === "Consumido" ? "neutral" : "danger"}>{l.status}</Pill>])} onEdit={() => setModal(true)} onDelete={(i) => setData({ ...data, lots: data.lots.filter((_, j) => j !== i) })} /></div>{modal && <Modal title="Novo Lote de Matéria-prima" onClose={() => setModal(false)}><form className="modal-form" onSubmit={(e) => { e.preventDefault(); const next = { lot: `LOTE-2026-${Math.floor(Math.random() * 900 + 100)}`, material: "Polvilho azedo", total: "300 kg", remaining: "300 kg", expiry: "25/02/2027", location: "MP • A-03-01", status: "Disponível" }; setData({ ...data, lots: [next, ...data.lots] }); setModal(false); }}><div className="form-grid"><Field label="Número do lote *"><TextInput placeholder="LOTE-2026-0001" /></Field><Field label="Matéria-prima *"><SelectInput><option>Polvilho azedo</option><option>Queijo meia cura</option></SelectInput></Field><Field label="Quantidade *"><TextInput type="number" placeholder="300" /></Field><Field label="Custo unitário"><TextInput type="number" placeholder="4,80" /></Field><Field label="Validade"><TextInput type="date" /></Field></div><div className="modal-actions"><Button variant="outline" onClick={() => setModal(false)}>Cancelar</Button><Button type="submit" icon={Check}>Cadastrar lote</Button></div></form></Modal>}</div>; }
+
+function MonitorPage({ sector }: { sector?: string }) { const [, navigate] = useLocation(); const selected = stages.find((s) => s.key === sector); if (selected) return <SectorMonitor stage={selected} />; return <div className="page-content monitor-page"><PageHeader title="Monitor da Produção" description="Linha completa, atualizada automaticamente a cada 20 segundos"><Button icon={Activity} onClick={() => navigate("/apontamento/cozinha")}>Ir para apontamento</Button></PageHeader><div className="monitor-hero"><img src={MONITOR_ART} alt="Fluxo industrial" /><div><span className="eyebrow">Linha de produção</span><h2>Visão operacional em tempo real</h2><p>Acompanhe filas, produção, perdas e ordens ativas por setor.</p></div></div><div className="metrics-grid six"><MetricCard label="OPs ativas" value="8" sub="em processo" icon={ClipboardList} /><MetricCard label="Produzido hoje" value="1.248 kg" sub="expedição" icon={Factory} tone="success" /><MetricCard label="Perdas hoje" value="36,5 kg" sub="produção" icon={AlertTriangle} tone="danger" /><MetricCard label="% de perda" value="2,8%" sub="média do dia" icon={Gauge} tone="warning" /><MetricCard label="Em processo (WIP)" value="2.460 kg" sub="linha completa" icon={Activity} tone="info" /><MetricCard label="OPs atrasadas" value="2" sub="requerem atenção" icon={CalendarClock} tone="danger" /></div><div className="monitor-links"><button onClick={() => navigate("/almoxarifado/requisicoes")}><PackageOpen size={16} /><b>3</b> requisições de matéria-prima em aberto <ChevronRight size={15} /></button><button onClick={() => navigate("/manutencao")}><Wrench size={16} /><b>3</b> ordens de manutenção abertas <ChevronRight size={15} /></button></div><div className="sector-grid">{stages.map((s, i) => <div className="panel sector-card" key={s.key} onClick={() => navigate(`/monitor/${s.key}`)}><div className="sector-head"><s.icon size={18} /><div><h3>{s.label}</h3><Pill tone={i === 0 ? "warning" : i > 4 ? "success" : "info"}>{i === 0 ? "Aguardando" : "Em processo"}</Pill></div></div><div className="sector-stats"><div><b>{[2, 3, 1, 2, 1, 2, 4][i]}</b><span>OPs no setor</span></div><div><b>{[420, 780, 640, 520, 310, 486, 1248][i]} kg</b><span>Em estoque</span></div></div><div className="sector-footer"><span><Activity size={13} /> {i + 4} apontamentos</span><span className="danger-text"><AlertTriangle size={13} /> {i + 1}.2 kg perda</span></div></div>)}</div><div className="dashboard-grid lower"><div className="panel"><div className="panel-head"><h3>Ordens em andamento</h3><Pill tone="info">8 OPs</Pill></div><Table columns={["OP", "Produto", "Etapa", "Status"]} rows={[[<span className="link-text">OP-2026-0018</span>, "Pão de Queijo Tradicional", "Cozinha", <Pill tone="info">Em produção</Pill>],[<span className="link-text">OP-2026-0017</span>, "Pão de Queijo Recheado", "Túnel", <Pill tone="warning">Aguardando</Pill>],[<span className="link-text">OP-2026-0016</span>, "Mini Pão de Queijo", "Expedição", <Pill tone="success">Pronto</Pill>]]} /></div><div className="panel"><div className="panel-head"><h3>Últimos apontamentos da fábrica</h3><span className="eyebrow">Hoje</span></div>{["OP-2026-0018 · Cozinha", "OP-2026-0017 · Túnel", "OP-2026-0016 · Expedição"].map((x, i) => <div className="activity-row" key={x}><span className="activity-dot" /><b>{x}</b><span>{[320, 180, 240][i]} kg enviados</span><small>há {i + 1}h</small></div>)}</div></div></div>; }
+function SectorMonitor({ stage }: { stage: typeof stages[number] }) { const [, navigate] = useLocation(); return <div className="page-content"><PageHeader title={`Monitor — ${stage.label}`} description={`Acompanhamento do setor · atualização automática`}><Button variant="outline" icon={ArrowLeft} onClick={() => navigate("/monitor")}>Visão geral</Button><Button icon={Activity} onClick={() => navigate(`/apontamento/${stage.key}`)}>Apontar</Button></PageHeader><div className="metrics-grid four"><MetricCard label="OPs no setor" value="2" sub="em andamento" icon={ClipboardList} /><MetricCard label="Recebido hoje" value="780 kg" sub="entrada do setor" icon={PackageOpen} tone="info" /><MetricCard label="Tempo médio" value="01:42 h" sub="por OP" icon={CalendarClock} tone="warning" /><MetricCard label="Estoque do setor" value="420 kg" sub="disponível" icon={Boxes} tone="success" /></div><div className="temperature-note"><Thermometer size={16} />Temperatura média dos apontamentos de hoje: <b>{stage.key === "tunel" || stage.key === "camara_fria" ? "-18,2°C" : "22,4°C"}</b></div><div className="panel table-panel"><div className="panel-head"><h3>Fila do setor</h3><Pill tone="info">2 OPs</Pill></div><Table columns={["OP", "Produto", "Lote", "Planejado", "Prioridade", "Ação"]} rows={[[<span className="mono">OP-2026-0018</span>, "Pão de Queijo Tradicional", "LOTE-0821", "420 kg", <Pill tone="danger">Urgente</Pill>, <Button variant="outline" icon={ArrowRight} onClick={() => navigate(`/apontamento/${stage.key}`)}>Apontar</Button>],[<span className="mono">OP-2026-0017</span>, "Pão de Queijo Recheado", "LOTE-0820", "280 kg", <Pill>Normal</Pill>, <Button variant="outline" icon={ArrowRight}>Abrir</Button>]]} /></div><div className="panel"><div className="panel-head"><h3>Apontamentos recentes</h3><span className="eyebrow">Hoje</span></div>{["OP-2026-0018", "OP-2026-0017", "OP-2026-0016"].map((op, i) => <div className="activity-row" key={op}><span className="activity-dot" /><b>{op}</b><span>Recebido {220 - i * 20} kg → enviado {210 - i * 18} kg</span><small>há {i + 1}h</small></div>)}</div></div>; }
+
+function ApontamentoPage({ sector }: { sector: string }) { const [, navigate] = useLocation(); const stage = stages.find((s) => s.key === sector) || stages[0]; const [running, setRunning] = useState(false); const { showToast } = useToast(); return <div className="page-content"><PageHeader title={`Apontamento — ${stage.label}`} description={stage.label === "Separação MP" ? "Pesagem e separação da matéria-prima" : "Registre pesos, temperatura e perdas da etapa"}><Button variant="outline" icon={Monitor} onClick={() => navigate(`/monitor/${stage.key}`)}>Monitor do setor</Button></PageHeader><div className="stage-tabs">{stages.map((s) => <button key={s.key} className={cn(s.key === stage.key && "active")} onClick={() => navigate(`/apontamento/${s.key}`)}><s.icon size={15} />{s.short}</button>)}</div><div className="metrics-grid four"><MetricCard label="OPs no setor" value="2" sub="em andamento" icon={ClipboardList} /><MetricCard label="Produzido hoje" value="780 kg" sub="saída da etapa" icon={Factory} tone="success" /><MetricCard label="Perdas hoje" value="12,4 kg" sub="2,1% do recebido" icon={AlertTriangle} tone="danger" /><MetricCard label="Em estoque no setor" value="420 kg" sub="disponível" icon={Boxes} tone="info" /></div><div className="dashboard-grid lower"><div className="panel form-panel"><div className="panel-head"><h3>Registrar apontamento</h3><Pill tone={running ? "success" : "neutral"}>{running ? "Em andamento" : "Parado"}</Pill></div><Field label="Ordem de Produção *"><SelectInput><option>Selecione a OP neste setor</option><option>OP-2026-0018 · LOTE-0821 · 420 kg</option><option>OP-2026-0017 · LOTE-0820 · 280 kg</option></SelectInput></Field><div className="selected-op"><span className="mono">OP-2026-0018</span><span>LOTE-2026-0821</span><b>420 kg <small>planejado</small></b></div><div className="run-control"><span className={cn("run-indicator", running && "on")} /> <b>{running ? "Cronômetro ativo" : "Pronto para iniciar"}</b><Button variant={running ? "danger" : "primary"} icon={running ? Pause : Play} onClick={() => setRunning(!running)}>{running ? "Parar" : "Iniciar"}</Button></div><div className="form-grid"><Field label="Peso recebido (kg)"><TextInput type="number" placeholder="0,00" /></Field><Field label="Peso enviado (kg)"><TextInput type="number" placeholder="0,00" /></Field><Field label="Perda (kg)"><TextInput type="number" placeholder="0,00" /></Field><Field label="Temperatura (°C)"><TextInput type="number" placeholder="22,0" /></Field><Field label="Operador"><SelectInput><option>Selecione...</option><option>SOUSA</option><option>João Batista</option></SelectInput></Field><Field label="Máquina"><SelectInput><option>Selecione...</option><option>Misturador Industrial 01</option><option>Envasadora Automática</option></SelectInput></Field></div><Field label="Motivo da perda"><TextInput placeholder="Ex.: sobra de massa na rosca" /></Field><Field label="Observações" wide><textarea className="input textarea" placeholder="Observações do apontamento" /></Field><div className="form-actions"><Button variant="outline" icon={Check} onClick={() => showToast("Apontamento registrado! O material seguiu para o próximo setor.")}>Salvar apontamento</Button><Button icon={ArrowRight} onClick={() => showToast("OP enviada para a próxima etapa.")}>Avançar etapa</Button></div><div className="info-note"><ArrowRight size={14} />O peso enviado sai do estoque deste setor e entra automaticamente no setor seguinte.</div></div><div className="panel"><div className="panel-head"><h3>Últimos apontamentos do setor</h3><span className="eyebrow">Hoje</span></div>{["OP-2026-0018", "OP-2026-0017", "OP-2026-0016"].map((op, i) => <div className="log-card" key={op}><div><b>{op}</b><Pill tone={i === 0 ? "info" : "success"}>{i === 0 ? "Em processo" : "Registrado"}</Pill></div><p>Recebido: {220 - i * 10} kg → Enviado: {210 - i * 10} kg · Perda: {10 + i} kg</p><small>SOUSA · há {i + 1}h</small></div>)}</div></div></div>; }
+
+function RastreabilidadePage() { const [query, setQuery] = useState(""); const [mode, setMode] = useState<"Lote" | "OP">("Lote"); const [searched, setSearched] = useState(false); return <div className="page-content"><PageHeader title="Rastreabilidade" description="Rastreie qualquer lote ou OP em uma única tela" /><div className="search-cards"><div className={cn("panel rastreio-search", mode === "Lote" && "selected")}><div className="search-card-title"><Tags size={17} /><b>Buscar por Lote</b></div><div className="search-card-row"><TextInput value={mode === "Lote" ? query : ""} onChange={(v) => { setMode("Lote"); setQuery(v); }} placeholder="Ex: LOTE-2026-0001" /><Button icon={Search} onClick={() => setSearched(true)}>Buscar</Button></div></div><div className={cn("panel rastreio-search", mode === "OP" && "selected")}><div className="search-card-title"><ClipboardList size={17} /><b>Buscar por OP</b></div><div className="search-card-row"><TextInput value={mode === "OP" ? query : ""} onChange={(v) => { setMode("OP"); setQuery(v); }} placeholder="Ex: OP-2026-0018" /><Button icon={Search} onClick={() => setSearched(true)}>Buscar</Button></div></div></div>{searched ? <div className="panel trace-result"><div className="trace-summary"><div><span>{mode === "Lote" ? "Lote" : "Ordem de Produção"}</span><strong>{query || (mode === "Lote" ? "LOTE-2026-0821" : "OP-2026-0018")}</strong></div><Pill tone="success">Disponível</Pill></div><div className="result-grid trace-grid"><div><span>Matéria-prima</span><b>Polvilho azedo</b></div><div><span>Fornecedor</span><b>Moinhos Gerais Ltda.</b></div><div><span>Quantidade</span><b>840 kg</b></div><div><span>Status</span><Pill tone="success">Disponível</Pill></div></div><h3>Movimentações (4)</h3>{["Entrada no almoxarifado", "Separação para OP-2026-0018", "Transferência para Cozinha", "Apontamento de produção"].map((x, i) => <div className="trace-row" key={x}><span className="activity-dot" /><div><b>{x}</b><small>{25 - i}08/2026 · {i + 9}:2{i}</small></div><strong>{i % 2 ? "-260 kg" : "+1.000 kg"}</strong></div>)}<h3>Etapas de Produção (7)</h3><div className="stage-track large">{stages.map((s, i) => <div className={cn("track-stage", i < 3 && "done", i === 3 && "active")} key={s.key}><span>{i < 3 ? <Check size={12} /> : i + 1}</span><small>{s.label}</small></div>)}</div></div> : <div className="empty-state"><Search size={42} /><p>Digite um número de lote ou OP para iniciar a rastreabilidade.</p></div>}</div>; }
+
+function ReportsPage() { const [start, setStart] = useState("2026-08-01"); const [end, setEnd] = useState("2026-08-25"); const { showToast } = useToast(); const reports: Array<[string, string, LucideIcon]> = [["Produção por período", "Ordens produzidas, kg planejados e realizados", Factory], ["Pedidos e faturamento", "Pedidos, valores e status comerciais", ClipboardList], ["Estoque e lotes", "Saldos, validade e movimentações", Boxes], ["Custos de produção", "Custos por OP, produto e etapa", CircleDollarSign], ["Qualidade", "Checklists, NCs e liberações", ShieldCheck], ["Manutenção", "Ordens, custos e disponibilidade", Wrench]] as const; return <div className="page-content"><PageHeader title="Relatórios" description="Exportação real em PDF, Excel e CSV com dados do sistema" /><div className="date-filter"><Field label="Data Início"><TextInput type="date" value={start} onChange={setStart} /></Field><Field label="Data Fim"><TextInput type="date" value={end} onChange={setEnd} /></Field><span>Filtro de período aplicado aos relatórios com data</span></div><div className="report-grid">{reports.map(([title, desc, Icon]) => <div className="panel report-card" key={title}><span className="report-icon"><Icon size={20} /></span><div><h3>{title}</h3><p>{desc}</p><div className="report-actions"><Button variant="outline" icon={Download} onClick={() => showToast("Relatório exportado com sucesso!")}>CSV</Button><Button variant="outline" icon={FileText} onClick={() => showToast("Relatório exportado com sucesso!")}>Excel</Button><Button variant="outline" icon={Download} onClick={() => showToast("Relatório exportado com sucesso!")}>PDF</Button></div></div></div>)}</div></div>; }
+
+function ManualPage() { return <div className="page-content"><PageHeader title="Manual de uso" description="Rotinas e orientações do Mineirada ERP + MES" /><div className="manual-hero"><img src={MANUAL_ART} alt="Linha de produção" /><div><span className="eyebrow">Operação integrada</span><h2>Do pedido à expedição, cada etapa no seu lugar.</h2><p>Consulte os passos para cadastrar insumos, liberar OPs, apontar produção e rastrear lotes.</p></div></div><div className="manual-grid">{[["Comece pelos cadastros", "Cadastre clientes, fornecedores, matérias-primas, produtos, máquinas e embalagens."], ["Planeje a produção", "Crie a receita/BOM, o pedido e a ordem de produção com lote e prioridade."], ["Execute e aponte", "Autorize a requisição, separe MP e registre pesos, temperatura e perdas em cada setor."], ["Feche o ciclo", "Libere a qualidade, atualize a câmara fria, acompanhe expedição e gere relatórios."]].map(([title, text], i) => <div className="panel manual-step" key={title}><span>{String(i + 1).padStart(2, "0")}</span><h3>{title}</h3><p>{text}</p><button className="text-link">Ver orientações <ArrowRight size={14} /></button></div>)}</div></div>; }
+
+function OperatorPage() { const [offline, setOffline] = useState(false); return <div className="page-content operator-page"><PageHeader title="App do Operador" description="Apontamento de chão de fábrica, otimizado para celular e modo offline"><Button variant={offline ? "danger" : "outline"} icon={offline ? Activity : RefreshCw} onClick={() => setOffline(!offline)}>{offline ? "Modo offline" : "Sincronizar"}</Button></PageHeader><div className="operator-hero"><div><span className="eyebrow">Experiência mobile</span><h2>Registre no setor, mesmo sem sinal.</h2><p>Selecione ou escaneie a OP, acompanhe o cronômetro e envie pesos, temperatura, foto e assinatura digital.</p><div className="operator-badges"><Pill tone="success">Pronto</Pill><Pill tone="info">2 pendências</Pill></div></div><img src={OPERATOR_ART} alt="Operador com scanner" /></div><div className="operator-grid"><div className="panel"><div className="panel-head"><h3>Selecionar Ordem de Produção</h3><Button variant="outline" icon={QrCode}>Escanear</Button></div><SelectInput><option>OP-2026-0018 · LOTE-2026-0821</option><option>OP-2026-0017 · LOTE-2026-0820</option></SelectInput><div className="operator-kpis"><div><span>Etapa</span><b>Cozinha</b></div><div><span>Lote</span><b className="mono">LOTE-0821</b></div><div><span>Planejado</span><b>420 kg</b></div></div></div><div className="panel signature-card"><div className="panel-head"><h3>Assinatura digital</h3><PenLineIcon /></div><div className="signature-box"><span>Assine aqui após conferir o registro</span></div><Button variant="outline" icon={Camera}>Adicionar foto</Button></div></div></div>; }
+
+function PenLineIcon() { return <Pencil size={16} className="muted-icon" />; }
+
+
+function PlaceholderPage({ title, description, construction = false }: { title: string; description?: string; construction?: boolean }) { return <div className="page-content"><PageHeader title={title} description={description} /><div className="empty-state large-empty"><FileText size={44} /><h2>{construction ? "Em construção" : "Nenhum dado encontrado"}</h2><p>{construction ? "Lista e operações deste módulo serão disponibilizadas nesta área." : "Não há registros para exibir no momento."}</p><Button variant="outline" icon={RefreshCw}>Atualizar</Button></div></div>; }
+
+function UserMenu({ user, onLogout }: { user: { username: string; role: Role }; onLogout: () => void }) { const [open, setOpen] = useState(false); return <div className="user-menu"><button className="user-trigger" onClick={() => setOpen(!open)}><span className="avatar"><CircleUserRound size={15} /></span><span className="user-trigger-text"><b>{user.username}</b><small>{roleLabels[user.role]}</small></span><ChevronDown size={14} /></button>{open && <div className="user-popover"><div className="popover-user"><span className="avatar large"><CircleUserRound size={18} /></span><div><b>Sousa</b><small>Usuário: {user.username}</small><small>Perfil: {roleLabels[user.role]}</small></div></div><div className="active-account"><CheckCircle2 size={14} /> Conta ativa</div><button onClick={() => setOpen(false)}><BookOpen size={15} /> Manual do sistema</button><button onClick={onLogout} className="logout-button"><LogOut size={15} /> Sair do sistema</button></div>}</div>; }
+
+function Sidebar({ user, onLogout, open, onClose }: { user: { username: string; role: Role }; onLogout: () => void; open: boolean; onClose: () => void }) { const [location, navigate] = useLocation(); const [expanded, setExpanded] = useState<Record<string, boolean>>({ Cadastros: true, Produção: true }); const visible = menuItems.filter((i) => !i.adminOnly || user.role === "gestor" || user.role === "admin"); return <aside className={cn("sidebar", open && "sidebar-open")}><div className="sidebar-brand"><img src={LOGO} alt="Mineirada" /><div><b>Mineirada</b><span>ERP + MES</span></div><button className="mobile-close" onClick={onClose}><X size={17} /></button></div><nav className="sidebar-nav">{visible.map((item) => { const active = item.href ? (item.href === "/" ? location === "/" : location.startsWith(item.href)) : item.children?.some((c) => c.href && location.startsWith(c.href)); const isExpanded = expanded[item.label] ?? !!active; return item.children ? <div className="nav-group" key={item.label}><button className={cn("nav-item", active && "nav-parent-active")} onClick={() => setExpanded({ ...expanded, [item.label]: !isExpanded })}><item.icon size={16} /><span>{item.label}</span>{isExpanded ? <ChevronDown size={13} /> : <ChevronRight size={13} />}</button>{isExpanded && <div className="nav-children">{item.children.map((child) => <button key={child.href} className={cn("nav-item child", location.startsWith(child.href || "__never__") || (child.href === "/" && location === "/") ? "active" : "")} onClick={() => { navigate(child.href || "/"); onClose(); }}><child.icon size={14} /><span>{child.label}</span>{child.href === "/almoxarifado/requisicoes" && <span className="nav-badge">3</span>}</button>)}</div>}</div> : <button key={item.label} className={cn("nav-item", active && "active")} onClick={() => { navigate(item.href || "/"); onClose(); }}><item.icon size={16} /><span>{item.label}</span></button>; })}</nav><div className="sidebar-footer"><UserMenu user={user} onLogout={onLogout} /><div className="sidebar-footer-line"><span>Mineirada ERP + MES</span><button className="theme-button"><Sun size={14} /></button></div></div></aside>; }
+
+function AppLayout({ children, user, onLogout }: { children: ReactNode; user: { username: string; role: Role }; onLogout: () => void }) { const [sidebarOpen, setSidebarOpen] = useState(false); const [location] = useLocation(); return <div className="app-shell"><Sidebar user={user} onLogout={onLogout} open={sidebarOpen} onClose={() => setSidebarOpen(false)} /><div className="app-main"><header className="topbar"><button className="menu-button" onClick={() => setSidebarOpen(true)}><Menu size={19} /></button><div className="breadcrumb"><span>Mineirada ERP + MES</span><ChevronRight size={14} /><b>{formatTitle(location)}</b></div><div className="topbar-actions"><button className="icon-button"><Sun size={17} /></button><UserMenu user={user} onLogout={onLogout} /></div></header><main className="main-scroll">{children}</main></div>{sidebarOpen && <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)} />}</div>; }
+
+function AuthenticatedRouter({ user, onLogout }: { user: { username: string; role: Role }; onLogout: () => void }) { const [location] = useLocation(); const [data, setData] = usePersistedData(); const common = { data, setData } as const; let content: ReactNode; if (location === "/") content = <Dashboard />; else if (location === "/manual") content = <ManualPage />; else if (location === "/pedidos") content = <OrdersPage {...common} />; else if (location === "/estoque") content = <InventoryOverview />; else if (location === "/estoque/visao-geral") content = <StockHub />; else if (location === "/almoxarifado/requisicoes") content = <RequisitionsPage />; else if (location === "/estoque/lotes") content = <LotsPage {...common} />; else if (location === "/monitor") content = <MonitorPage />; else if (location.startsWith("/monitor/")) content = <MonitorPage sector={location.split("/")[2]} />; else if (location.startsWith("/apontamento/")) content = <ApontamentoPage sector={location.split("/")[2]} />; else if (location === "/rastreabilidade") content = <RastreabilidadePage />; else if (location === "/relatorios") content = <ReportsPage />; else if (location === "/operador") content = <OperatorPage />; else if (location === "/vendas/faturamento") content = <PlaceholderPage title="Faturamento" description="Pedidos prontos para faturar" construction />; else if (location === "/vendas/pedidos-faturados") content = <PlaceholderPage title="Pedidos Faturados" description="Histórico de pedidos faturados" />; else if (location === "/producao/ordens") content = <PlaceholderPage title="Ordens de Produção" description="Planeje e acompanhe as ordens da fábrica" />; else if (location.startsWith("/cadastros/clientes")) content = <CrudPage kind="Cliente" title="Clientes" description="Cadastros de clientes e condições comerciais" columns={["Código", "Nome", "CNPJ", "Telefone", "Cidade", "Limite Crédito"]} records={data.clients as RecordItem[]} setRecords={(r) => setData({ ...data, clients: r as typeof data.clients })} fields={["code", "name", "cnpj", "phone", "city", "credit"]} />; else if (location.startsWith("/cadastros/fornecedores")) content = <CrudPage kind="Fornecedor" title="Fornecedores" description="Cadastros de fornecedores e contatos" columns={["Código", "Nome", "CNPJ", "Telefone", "Cidade", "Contato"]} records={data.suppliers as RecordItem[]} setRecords={(r) => setData({ ...data, suppliers: r as typeof data.suppliers })} fields={["code", "name", "cnpj", "phone", "city", "contact"]} />; else if (location.startsWith("/cadastros/produtos")) content = <CrudPage kind="Produto" title="Produtos" description="Produtos acabados e parâmetros de armazenamento" columns={["Código", "Nome", "Categoria", "Unidade", "Preço Venda", "Validade", "Temp. Armazenamento"]} records={data.products as RecordItem[]} setRecords={(r) => setData({ ...data, products: r as typeof data.products })} fields={["code", "name", "category", "unit", "price", "shelf", "temp"]} />; else if (location.startsWith("/cadastros/materias-primas")) content = <CrudPage kind="Matéria-prima" title="Matérias-primas" description="Insumos utilizados nas receitas e requisições" columns={["Código", "Nome", "Categoria", "Unidade", "Custo Unit.", "Estoque Atual", "Estoque Mín.", "Status"]} records={data.materials as RecordItem[]} setRecords={(r) => setData({ ...data, materials: r as typeof data.materials })} fields={["code", "name", "category", "unit", "cost", "stock", "min", "status"]} />; else if (location.startsWith("/cadastros/maquinas")) content = <CrudPage kind="Máquina" title="Máquinas" description="Equipamentos e disponibilidade dos setores" columns={["Código", "Nome", "Setor", "Marca/Modelo", "Potência", "Status"]} records={data.machines as RecordItem[]} setRecords={(r) => setData({ ...data, machines: r as typeof data.machines })} fields={["code", "name", "sector", "brand", "power", "status"]} />; else if (location === "/admin/usuarios") content = <UsersPage />; else if (location === "/estoque/movimentacoes") content = <PlaceholderPage title="Movimentações" description="Entradas, baixas e transferências entre setores" />; else if (location === "/estoque/materia-prima") content = <PlaceholderPage title="Estoque de Matéria-Prima" description="Fichas e saldos de matéria-prima" />; else if (location === "/estoque/acabado") content = <PlaceholderPage title="Câmara Fria" description="Produtos acabados prontos para venda" />; else if (location === "/estoque/embalagens" || location === "/cadastros/embalagens") content = <PlaceholderPage title="Embalagens" description="Cadastro, estoque mínimo e custo das embalagens" />; else if (location === "/engenharia/receitas") content = <PlaceholderPage title="Receitas / BOM" description="Estrutura de materiais e quantidades por produto" />; else if (location === "/etiquetas") content = <PlaceholderPage title="Etiquetas" description="Impressão de etiquetas de lote e expedição" />; else if (location.startsWith("/qualidade/")) content = <PlaceholderPage title={location.includes("checklists") ? "Checklists" : "Não Conformidades"} description="Controle de qualidade e liberação de lotes" />; else if (location === "/manutencao") content = <PlaceholderPage title="Manutenção" description="Ordens de manutenção e disponibilidade de máquinas" />; else if (location === "/custos") content = <PlaceholderPage title="Custos" description="Custos de produção por produto e etapa" />; else if (location === "/auditoria") content = <PlaceholderPage title="Auditoria" description="Eventos e histórico de alterações" />; else if (location === "/admin/dados") content = <PlaceholderPage title="Dados e Backup" description="Exportação, restauração e governança dos dados" />; else content = <PlaceholderPage title="Página não encontrada" description="A rota solicitada não foi mapeada." />; return <AppLayout user={user} onLogout={onLogout}>{content}</AppLayout>; }
+
+function UsersPage() { const [modal, setModal] = useState(false); const [change, setChange] = useState(false); return <div className="page-content"><PageHeader title="Usuários do Sistema" description="Login por usuário e senha, gravados diretamente no banco de dados"><Button variant="outline" icon={KeyRound} onClick={() => setChange(true)}>Minha senha</Button><Button icon={UserPlus} onClick={() => setModal(true)}>Novo usuário</Button></PageHeader><div className="toolbar"><div className="search-box"><Search size={16} /><input placeholder="Buscar por login ou nome..." /></div></div><div className="panel table-panel"><div className="panel-head"><h3>Contas cadastradas</h3><Pill tone="success">3 ativas</Pill></div><Table columns={["Usuário", "Nome", "Perfil", "Situação", "Último acesso"]} rows={[[<span className="mono">SOUSA</span>, "Sousa", <Pill tone="primary">Gestor</Pill>, <Pill tone="success">Ativo</Pill>, "25/08/2026 14:32"],[<span className="mono">JOAO</span>, "João Batista", <Pill tone="info">Operador</Pill>, <Pill tone="success">Ativo</Pill>, "25/08/2026 13:18"],[<span className="mono">MARINA</span>, "Marina Lopes", <Pill>Qualidade</Pill>, <Pill tone="neutral">Inativo</Pill>, "22/08/2026 09:11"]]} /></div><div className="panel permission-panel"><div className="panel-head"><h3>Perfis e permissões</h3></div><div className="permission-grid">{Object.entries(roleLabels).map(([key, label]) => <div key={key}><Pill tone={key === "gestor" ? "primary" : "neutral"}>{label}</Pill><p>{key === "gestor" ? "Acesso completo a todas as funções, incluindo usuários e perfis." : key === "operador" ? "Acessa o fluxo de produção, registra etapas e lotes." : key === "qualidade" ? "Gerencia checklists, não conformidades e liberação de lotes." : "Visualiza os módulos conforme a responsabilidade definida."}</p></div>)}</div></div>{modal && <Modal title="Novo usuário" onClose={() => setModal(false)}><form className="modal-form"><Field label="Login *"><TextInput placeholder="Ex.: JOAO" /></Field><Field label="Senha *"><TextInput type="password" placeholder="Mínimo 6 caracteres" /></Field><Field label="Perfil *"><SelectInput><option>Operador</option><option>Qualidade</option><option>Gerente</option></SelectInput></Field><div className="modal-actions"><Button variant="outline" onClick={() => setModal(false)}>Cancelar</Button><Button icon={Check}>Cadastrar</Button></div></form></Modal>}{change && <Modal title="Alterar minha senha" onClose={() => setChange(false)}><form className="modal-form"><Field label="Senha atual"><TextInput type="password" /></Field><Field label="Nova senha"><TextInput type="password" /></Field><div className="modal-actions"><Button variant="outline" onClick={() => setChange(false)}>Cancelar</Button><Button icon={Check}>Salvar</Button></div></form></Modal>}</div>; }
+
+export default function App() { const [location, navigate] = useLocation(); const previewMode = new URLSearchParams(window.location.search).get("preview") === "1"; const [user, setUser] = useState<{ username: string; role: Role } | null>(() => { try { const raw = localStorage.getItem("mineirada_user_profile"); return raw ? JSON.parse(raw) : previewMode ? { username: "SOUSA", role: "gestor" } : null; } catch { return previewMode ? { username: "SOUSA", role: "gestor" } : null; } }); const login = (role: Role) => { setUser({ username: "SOUSA", role }); navigate("/"); }; const logout = () => { localStorage.removeItem("mineirada_session_v1"); localStorage.removeItem("mineirada_user_profile"); setUser(null); navigate("/login"); }; if (!user && location !== "/consulta-pedido" && !location.startsWith("/consulta-pedido/")) return <LoginPage onLogin={login} />; if (location === "/consulta-pedido") return <div className="public-page"><div className="public-page-head"><img src={LOGO} alt="Mineirada" /><h1>Mineirada ERP + MES</h1><p>Acompanhamento público de pedido</p></div><PublicLookup /><button className="back-login" onClick={() => navigate("/login")}><ArrowLeft size={15} /> Voltar para o login</button></div>; if (location.startsWith("/consulta-pedido/")) return <div className="public-page"><div className="public-page-head"><img src={LOGO} alt="Mineirada" /><h1>Mineirada ERP + MES</h1><p>Acompanhamento público de pedido</p></div><PublicLookup /><button className="back-login" onClick={() => navigate("/login")}><ArrowLeft size={15} /> Voltar para o login</button></div>; return <AuthenticatedRouter user={user || { username: "SOUSA", role: "gestor" }} onLogout={logout} />; }
