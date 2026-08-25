@@ -98,3 +98,9 @@ As listas de Pedidos e Movimentações contam com busca combinada e filtros avan
 Os anexos são convertidos para data URL e permanecem no `localStorage` da instalação, acompanhando o backup JSON local. Nenhum registro, anexo, avaliação ou dado operacional é pré-populado pela réplica.
 
 O Dashboard passou a exibir KPIs derivados dos cadastros, percentuais somente quando há base de cálculo e gráficos que permanecem em estado vazio enquanto não houver produção ou movimentações reais.
+
+## Tema escuro e Código QR
+
+O cabeçalho autenticado possui alternância acessível entre modo claro e modo escuro. A preferência é persistida no navegador, respeita o contraste do tema âmbar/carvão e mantém foco visível para navegação por teclado.
+
+Na consulta pública, o usuário pode selecionar uma imagem do Código QR ou abrir a câmera em dispositivos compatíveis. A leitura usa `BarcodeDetector` quando disponível e `jsQR` como fallback para imagens, exibindo estados de análise, sucesso e erro. Depois que um pedido é localizado, o sistema gera um Código QR real para a URL pública correspondente e oferece download em PNG ou SVG. O caminho-base do GitHub Pages é incorporado automaticamente ao código exportado.

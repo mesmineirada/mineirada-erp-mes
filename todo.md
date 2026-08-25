@@ -19,3 +19,13 @@
 | Auditar textos visíveis em inglês | [x] |
 | Traduzir interface, mensagens e estados para português | [x] |
 | Validar telas e build após a tradução | [x] |
+
+## Tema escuro e Código QR
+
+| Item | Situação |
+|---|---|
+| Auditar tema e fluxo atual de Código QR | [x] |
+| Implementar alternância acessível de modo escuro | [x] |
+| Adicionar carregamento e feedback visual para gerar/escanear QR | [x] |
+| Exportar Código QR como PNG e SVG | [x] |
+| Validar responsividade, acessibilidade e build | [x] |
