@@ -84,3 +84,17 @@ A réplica agora inclui telas navegáveis para **Ordens de Produção**, **Fluxo
 As movimentações atualizam o saldo de matéria-prima quando encontram uma ficha pelo código ou nome. Criações e exclusões dos módulos operacionais geram eventos no histórico de auditoria. As telas de cadastro possuem estado de carregamento inicial, validação de campos obrigatórios, botão de salvamento com animação e mensagens de feedback não bloqueantes.
 
 > Esta implementação continua sendo frontend-only. Para uso produtivo, migre credenciais, registros e auditoria para um backend com autenticação segura, controle de concorrência e trilha de auditoria imutável.
+
+## Identidade visual
+
+A interface utiliza o logo Mineirada fornecido pelo cliente no login e na consulta pública, além do símbolo compacto na sidebar e como favicon. Os ativos foram publicados no armazenamento persistente do projeto e referenciados por seus caminhos `/manus-storage/`.
+
+A validação final após a troca da marca foi concluída com `pnpm check` e `pnpm build` sem erros.
+
+## Fluxos integrados e filtros
+
+As listas de Pedidos e Movimentações contam com busca combinada e filtros avançados por status, prioridade, tipo, origem, destino e período. Ordens de produção podem ser relacionadas a pedidos e lotes cadastrados; Qualidade e Manutenção podem apontar OPs e máquinas relacionadas, abrir detalhes, editar registros e baixar os anexos escolhidos pelo usuário.
+
+Os anexos são convertidos para data URL e permanecem no `localStorage` da instalação, acompanhando o backup JSON local. Nenhum registro, anexo, avaliação ou dado operacional é pré-populado pela réplica.
+
+O Dashboard passou a exibir KPIs derivados dos cadastros, percentuais somente quando há base de cálculo e gráficos que permanecem em estado vazio enquanto não houver produção ou movimentações reais.

@@ -1,13 +1,13 @@
-# Revisão de responsividade
+# Fechamento da réplica Mineirada ERP/MES
 
 | Item | Situação |
 |---|---|
-| Auditar layouts, larguras mínimas e overflow | [x] |
-| Ajustar sidebar, topbar e conteúdo por viewport | [x] |
-| Adaptar tabelas, filtros, gráficos e modais | [x] |
-| Melhorar estados vazios e formulários em telas pequenas | [x] |
-| Validar desktop 1280px | [x] |
-| Validar tablet 768px | [x] |
-| Validar iPhone 390px | [x] |
-| Validar celular 375px | [x] |
-| Executar check/build e salvar checkpoint | [x] |
+| Aplicar logo e marca no login, sidebar e favicon | [x] |
+| Cobrir rotas e shell responsivo desktop/mobile | [x] |
+| Implementar CRUD local de Ordens, Movimentações, Qualidade, Manutenção e Auditoria | [x] |
+| Adicionar edição detalhada e anexos locais em Qualidade e Manutenção | [x] |
+| Criar dashboard com KPIs derivados e gráficos de produção/estoque | [x] |
+| Implementar filtros avançados em Pedidos e Movimentações | [x] |
+| Integrar vínculos entre OP, pedido, lote, máquina e registros operacionais | [x] |
+| Validar `pnpm check`, `pnpm build` e capturas desktop/mobile | [x] |
+| Salvar checkpoint final para entrega | [ ] |
