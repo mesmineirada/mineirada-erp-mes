@@ -100,3 +100,13 @@
 | Vincular histórico de entradas e saídas somente ao Estoque/Almoxarifado | [x] — histórico em modal exclusivo do Estoque |
 | Manter Cadastro restrito aos dados mestre dos itens | [x] — removidos saldo atual e status operacional do formulário/listagem |
 | Validar rotas, testes, responsividade e build | [x] — rotas verificadas, check/test/build e captura desktop aprovados |
+
+## Auditoria de Pedidos, Painel e Nova OP
+
+| Item | Situação |
+|---|---|
+| Verificar inclusão de itens com quantidade, valor unitário e total | [x] — modal com seleção de produto, quantidade, valor unitário e total calculado |
+| Verificar edição de pedidos e itens vinculados | [x] — listagem usa `onEdit` e modal preserva itens/status |
+| Verificar cards clicáveis do Painel e listagem filtrada de OPs | [x] — cards navegam para filtros Abertas/Atrasadas e a listagem exibe cliente vinculado |
+| Verificar seleção dinâmica de produto no formulário de Nova OP | [x] — dropdown usa produtos cadastrados e preserva registros legados |
+| Corrigir pendências e validar testes/build | [x] — `pnpm check`, `pnpm test` e `pnpm build` aprovados |

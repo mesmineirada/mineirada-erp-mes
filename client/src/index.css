@@ -523,3 +523,16 @@ html.dark .qr-panel { background: var(--surface-muted); }
 .sync-indicator { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); font-size: 11px; font-weight: 700; white-space: nowrap; }
 .sync-indicator svg { color: var(--success); }
 @media (max-width: 700px) { .sync-indicator { display: none; } }
+
+/* Cards de indicadores com navegação contextual */
+.metric-card-clickable { position: relative; width: 100%; text-align: left; cursor: pointer; border: 1px solid var(--border); font: inherit; color: inherit; transition: transform .16s ease, border-color .16s ease, box-shadow .16s ease; }
+.metric-card-clickable:hover { transform: translateY(-2px); border-color: var(--primary); box-shadow: 0 8px 20px rgba(84, 42, 16, .10); }
+.metric-card-clickable:focus-visible { outline: 3px solid color-mix(in srgb, var(--primary) 45%, transparent); outline-offset: 2px; }
+.metric-card-arrow { position: absolute; right: 12px; bottom: 12px; color: var(--primary); }
+.order-items-panel { display: grid; gap: 14px; }
+.order-items-list { display: grid; gap: 12px; }
+.order-item-row { display: grid; grid-template-columns: minmax(180px, 2fr) repeat(4, minmax(90px, 1fr)) auto; gap: 10px; align-items: end; padding: 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface-muted); }
+.order-total { display: flex; justify-content: flex-end; gap: 12px; align-items: center; padding-top: 8px; border-top: 1px solid var(--border); }
+.order-total strong { font-size: 18px; color: var(--primary); }
+@media (max-width: 900px) { .order-item-row { grid-template-columns: repeat(2, minmax(0, 1fr)); } .order-item-row .button { grid-column: 1 / -1; } }
+@media (max-width: 520px) { .order-item-row { grid-template-columns: 1fr; } }
