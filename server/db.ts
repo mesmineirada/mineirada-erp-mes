@@ -1,6 +1,7 @@
 import { eq } from "drizzle-orm";
+import { randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, workspaceState } from "../drizzle/schema";
+import { InsertUser, packagingItems, products, productionEntries, rawMaterials, stockMovements, users, workspaceState } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -77,6 +78,25 @@ export async function upsertUser(user: InsertUser): Promise<void> {
   }
 }
 
+function hashPassword(password: string, salt = randomBytes(16).toString("hex")) { return `scrypt$${salt}$${scryptSync(password, salt, 64).toString("hex")}`; }
+function verifyPassword(password: string, stored: string) { const [, salt, digest] = stored.split("$"); if (!salt || !digest) return false; const actual = scryptSync(password, salt, 64); const expected = Buffer.from(digest, "hex"); return actual.length === expected.length && timingSafeEqual(actual, expected); }
+
+const LEGACY_ACCOUNTS = [
+  { username: "SOUSA", name: "Sousa", profile: "gestor", password: "RGMS1234" },
+  { username: "KARITA", name: "Karita", profile: "admin", password: "12345678" },
+  { username: "FELIPE", name: "Felipe", profile: "admin", password: "12345678" },
+] as const;
+
+export async function loginWithCredentials(username: string, password: string) {
+  const db = await getDb(); if (!db) return null;
+  const normalized = username.trim().toUpperCase(); const account = LEGACY_ACCOUNTS.find((candidate) => candidate.username === normalized); if (!account || !password) return null;
+  const existing = await db.select().from(users).where(eq(users.username, normalized)).limit(1);
+  let user = existing[0];
+  if (!user) { const inserted = await db.insert(users).values({ openId: `legacy:${normalized}`, username: normalized, passwordHash: hashPassword(account.password), profile: account.profile, name: account.name, loginMethod: "credentials", role: "admin" }).$returningId(); const id = inserted[0]?.id; if (!id) return null; const created = await db.select().from(users).where(eq(users.id, id)).limit(1); user = created[0]; }
+  if (!user || !user.passwordHash || !verifyPassword(password, user.passwordHash)) return null;
+  return user;
+}
+
 export async function getUserByOpenId(openId: string) {
   const db = await getDb();
   if (!db) {
@@ -96,6 +116,45 @@ export async function getWorkspaceState() {
   return result[0];
 }
 
+type LegacyRecord = Record<string, unknown>;
+const textValue = (record: LegacyRecord, key: string, fallback = "") => String(record[key] ?? fallback).trim();
+const numberValue = (record: LegacyRecord, key: string, fallback = "0") => { const value = String(record[key] ?? fallback).replace(",", "."); return /^-?\d+(\.\d+)?$/.test(value) ? value : fallback; };
+
+export async function migrateWorkspaceToNormalized(state: unknown) {
+  const db = await getDb();
+  if (!db || !state || typeof state !== "object") return { migrated: false, reason: "database-or-state-unavailable" };
+  const source = state as Record<string, unknown>;
+  const records = (key: string) => Array.isArray(source[key]) ? source[key].filter((item): item is LegacyRecord => Boolean(item && typeof item === "object")) : [];
+  const existingProducts = await db.select({ id: products.id }).from(products).limit(1);
+  const existingMaterials = await db.select({ id: rawMaterials.id }).from(rawMaterials).limit(1);
+  const existingPackaging = await db.select({ id: packagingItems.id }).from(packagingItems).limit(1);
+  const existingMovements = await db.select({ id: stockMovements.id }).from(stockMovements).limit(1);
+  const existingEntries = await db.select({ id: productionEntries.id }).from(productionEntries).limit(1);
+  if (!existingProducts.length) for (const [index, item] of Array.from(records("products").entries())) { const code = textValue(item, "code", `LEGACY-PROD-${index + 1}`); await db.insert(products).values({ code, name: textValue(item, "name", code), category: textValue(item, "category") || null, unit: textValue(item, "unit", "UN"), salePrice: numberValue(item, "price"), shelfLifeDays: Number.parseInt(textValue(item, "shelf"), 10) || null, storageTemperature: textValue(item, "temp") || null, minimumStock: numberValue(item, "min") }); }
+  if (!existingMaterials.length) for (const [index, item] of Array.from(records("materials").entries())) { const code = textValue(item, "code", `LEGACY-MP-${index + 1}`); await db.insert(rawMaterials).values({ code, name: textValue(item, "name", code), category: textValue(item, "category") || null, unit: textValue(item, "unit", "KG"), unitCost: numberValue(item, "cost"), minimumStock: numberValue(item, "min"), supplier: textValue(item, "supplier") || null }); }
+  if (!existingPackaging.length) for (const [index, item] of Array.from(records("packaging").entries())) { const code = textValue(item, "code", `LEGACY-EMB-${index + 1}`); await db.insert(packagingItems).values({ code, name: textValue(item, "name", code), packagingType: textValue(item, "category", "Embalagem"), size: textValue(item, "size") || null, unit: textValue(item, "unit", "UN"), unitCost: numberValue(item, "cost"), minimumStock: numberValue(item, "min") }); }
+  if (!existingMovements.length) { const materials = await db.select().from(rawMaterials); const productRows = await db.select().from(products); const packaging = await db.select().from(packagingItems); for (const [index, item] of Array.from(records("movements").entries())) { const label = textValue(item, "item").toLowerCase(); const material = materials.find((row) => row.name.toLowerCase() === label || row.code.toLowerCase() === label); const product = productRows.find((row) => row.name.toLowerCase() === label || row.code.toLowerCase() === label); const pack = packaging.find((row) => row.name.toLowerCase() === label || row.code.toLowerCase() === label); const match = material ? { itemKind: "rawMaterial" as const, itemId: material.id, unit: material.unit } : product ? { itemKind: "product" as const, itemId: product.id, unit: product.unit } : pack ? { itemKind: "packaging" as const, itemId: pack.id, unit: pack.unit } : null; if (match) await db.insert(stockMovements).values({ externalId: textValue(item, "id", `LEGACY-MOV-${index + 1}`), itemKind: match.itemKind, itemId: match.itemId, movementType: ["Entrada", "Saída", "Ajuste"].includes(textValue(item, "type")) ? textValue(item, "type") as "Entrada" | "Saída" | "Ajuste" : "Ajuste", quantity: numberValue(item, "quantity"), unit: textValue(item, "unit", match.unit), origin: textValue(item, "origin") || null, destination: textValue(item, "destination") || null, lot: textValue(item, "lot") || null, note: textValue(item, "note") || null, occurredAt: new Date(textValue(item, "date") || Date.now()) }); } }
+  if (!existingEntries.length) for (const [index, item] of Array.from(records("productionEntries").entries())) await db.insert(productionEntries).values({ externalId: textValue(item, "id", `LEGACY-APT-${index + 1}`), productionOrderNumber: textValue(item, "orderNumber"), sector: textValue(item, "sector", "produção"), received: numberValue(item, "received"), sent: numberValue(item, "sent"), loss: numberValue(item, "loss"), temperature: textValue(item, "temperature") || null, occurredAt: new Date(textValue(item, "date") || Date.now()) });
+  return { migrated: true, products: records("products").length, materials: records("materials").length, packaging: records("packaging").length, movements: records("movements").length, productionEntries: records("productionEntries").length };
+}
+
+export async function syncNormalizedWorkspace(state: unknown) {
+  const db = await getDb(); if (!db || !state || typeof state !== "object") return;
+  const source = state as Record<string, unknown>; const records = (key: string) => Array.isArray(source[key]) ? source[key].filter((item): item is LegacyRecord => Boolean(item && typeof item === "object")) : [];
+  for (const [index, item] of Array.from(records("products").entries())) { const code = textValue(item, "code", `LEGACY-PROD-${index + 1}`); const values = { code, name: textValue(item, "name", code), category: textValue(item, "category") || null, unit: textValue(item, "unit", "UN"), salePrice: numberValue(item, "price"), shelfLifeDays: Number.parseInt(textValue(item, "shelf"), 10) || null, storageTemperature: textValue(item, "temp") || null, minimumStock: numberValue(item, "min") }; await db.insert(products).values(values).onDuplicateKeyUpdate({ set: values }); }
+  for (const [index, item] of Array.from(records("materials").entries())) { const code = textValue(item, "code", `LEGACY-MP-${index + 1}`); const values = { code, name: textValue(item, "name", code), category: textValue(item, "category") || null, unit: textValue(item, "unit", "KG"), unitCost: numberValue(item, "cost"), minimumStock: numberValue(item, "min"), supplier: textValue(item, "supplier") || null }; await db.insert(rawMaterials).values(values).onDuplicateKeyUpdate({ set: values }); }
+  for (const [index, item] of Array.from(records("packaging").entries())) { const code = textValue(item, "code", `LEGACY-EMB-${index + 1}`); const values = { code, name: textValue(item, "name", code), packagingType: textValue(item, "category", "Embalagem"), size: textValue(item, "size") || null, unit: textValue(item, "unit", "UN"), unitCost: numberValue(item, "cost"), minimumStock: numberValue(item, "min") }; await db.insert(packagingItems).values(values).onDuplicateKeyUpdate({ set: values }); }
+  const materials = await db.select().from(rawMaterials); const productRows = await db.select().from(products); const packaging = await db.select().from(packagingItems);
+  for (const [index, item] of Array.from(records("movements").entries())) { const externalId = textValue(item, "id", `LEGACY-MOV-${index + 1}`); const label = textValue(item, "item").toLowerCase(); const material = materials.find((row) => row.name.toLowerCase() === label || row.code.toLowerCase() === label); const product = productRows.find((row) => row.name.toLowerCase() === label || row.code.toLowerCase() === label); const pack = packaging.find((row) => row.name.toLowerCase() === label || row.code.toLowerCase() === label); const match = material ? { itemKind: "rawMaterial" as const, itemId: material.id, unit: material.unit } : product ? { itemKind: "product" as const, itemId: product.id, unit: product.unit } : pack ? { itemKind: "packaging" as const, itemId: pack.id, unit: pack.unit } : null; if (match) { const values = { externalId, itemKind: match.itemKind, itemId: match.itemId, movementType: ["Entrada", "Saída", "Ajuste"].includes(textValue(item, "type")) ? textValue(item, "type") as "Entrada" | "Saída" | "Ajuste" : "Ajuste", quantity: numberValue(item, "quantity"), unit: textValue(item, "unit", match.unit), origin: textValue(item, "origin") || null, destination: textValue(item, "destination") || null, lot: textValue(item, "lot") || null, note: textValue(item, "note") || null, occurredAt: new Date(textValue(item, "date") || Date.now()) }; await db.insert(stockMovements).values(values).onDuplicateKeyUpdate({ set: values }); } }
+  for (const [index, item] of Array.from(records("productionEntries").entries())) { const externalId = textValue(item, "id", `LEGACY-APT-${index + 1}`); const values = { externalId, productionOrderNumber: textValue(item, "orderNumber"), sector: textValue(item, "sector", "produção"), received: numberValue(item, "received"), sent: numberValue(item, "sent"), loss: numberValue(item, "loss"), temperature: textValue(item, "temperature") || null, occurredAt: new Date(textValue(item, "date") || Date.now()) }; await db.insert(productionEntries).values(values).onDuplicateKeyUpdate({ set: values }); }
+}
+
+export async function getNormalizedProducts(query: string, offset: number, limit: number) {
+  const db = await getDb(); if (!db) return { rows: [], nextOffset: null };
+  const all = await db.select({ id: products.id, code: products.code, name: products.name, unit: products.unit, price: products.salePrice }).from(products).orderBy(products.name);
+  const normalized = query.trim().toLowerCase(); const filtered = normalized ? all.filter((item) => `${item.code} ${item.name}`.toLowerCase().includes(normalized)) : all; const rows = filtered.slice(offset, offset + limit); return { rows, nextOffset: offset + limit < filtered.length ? offset + limit : null };
+}
+
 export async function saveWorkspaceState(state: string, updatedBy: string, version: number) {
   const db = await getDb();
   if (!db) throw new Error("Database is not available");
@@ -107,6 +166,7 @@ export async function saveWorkspaceState(state: string, updatedBy: string, versi
   }
   const nextVersion = (current?.version ?? 0) + 1;
   await db.insert(workspaceState).values({ id: 1, state, updatedBy, version: nextVersion }).onDuplicateKeyUpdate({ set: { state, updatedBy, version: nextVersion } });
+  try { await syncNormalizedWorkspace(JSON.parse(state)); } catch (error) { console.error("[Database] Normalized sync failed; workspace JSON preserved", error); }
   return { version: nextVersion, updatedBy };
 }
 

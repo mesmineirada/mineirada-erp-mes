@@ -176,3 +176,19 @@
 | Corrigir monitores para usar OPs e apontamentos persistidos | [x] — indicadores e cartões setoriais derivados de OPs/apontamentos |
 | Persistir métricas de apontamentos e refletir indicadores por setor | [x] — pesos, perdas e temperatura gravados no workspace |
 | Validar rastreabilidade por lote e exportação CSV real | [x] — consulta por lote/OP e download CSV implementados e compilados |
+
+## Nova etapa — banco normalizado, autenticação e operação de almoxarifado
+
+| Item | Situação |
+|---|---|
+| Mapear schema, workspace_state, login legado, OAuth e rotas operacionais | [x] — schema, routers, contexto OAuth e rotas revisados |
+| Criar tabelas normalizadas de produtos, matérias-primas, embalagens, movimentações e apontamentos | [x] — tabelas criadas com autoria e identificadores externos |
+| Migrar dados compatíveis do workspace sem apagar registros existentes | [x] — migração idempotente e sincronização contínua implementadas |
+| Conectar CRUD e consultas das telas ao banco normalizado com fallback seguro | [x] — save do workspace sincroniza tabelas e catálogo usa consulta paginada |
+| Concluir autenticação server-side sem quebrar SOUSA, KARITA e FELIPE | [x] — login scrypt e cookie JWT integrado ao contexto OAuth |
+| Testar sessões simultâneas e isolamento/compartilhamento correto dos dados | [x] — smoke test real com três cookies independentes aprovado |
+| Implementar autocomplete paginado com busca incremental real | [x] — tRPC por consulta/offset com carregamento incremental |
+| Completar Câmara Fria, Matéria-prima e Embalagens com CRUD funcional | [x] — atalhos de cadastro e entrada integrados às visões de Estoque |
+| Permitir editar e excluir requisições de almoxarifado | [x] — CRUD compartilhado com filtros, vínculo de OP/pedido e auditoria |
+| Implementar autorização de OP, separação de MP/suprimentos e liberação para produção | [x] — ação de autorização registra separação e muda OP para Em produção |
+| Validar testes, rotas, responsividade e publicação | [x] — check, 6 testes, build e smoke test de sessões aprovados |
