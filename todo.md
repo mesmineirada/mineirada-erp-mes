@@ -1,8 +1,11 @@
-# Tarefas — usuários e perfis
+# Correção de rotas e eficiência
 
-- [x] Inspecionar o modelo atual de autenticação e a lista de usuários.
-- [x] Cadastrar SOUSA como Gestor com a senha solicitada.
-- [x] Cadastrar KARITA e FELIPE como Administradores com a senha solicitada.
-- [x] Atualizar a tela administrativa de usuários.
-- [x] Validar login, perfil exibido e permissões básicas.
-- [x] Executar check/build e salvar checkpoint.
+| Item | Situação |
+|---|---|
+| Levantar erros atuais de TypeScript e runtime | [x] |
+| Auditar todas as rotas declaradas no menu | [x] |
+| Corrigir imports, componentes e tipagens quebradas | [x] |
+| Corrigir lógica de persistência, filtros e criação de registros | [x] |
+| Otimizar renderização e reduzir dados repetidos | [x] |
+| Validar rotas críticas e build de produção | [x] |
+| Salvar checkpoint da correção | [ ] |
