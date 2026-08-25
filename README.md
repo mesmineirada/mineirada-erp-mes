@@ -20,6 +20,16 @@ pnpm build
 
 O preview local do Vite fica disponível na porta `3000`. O projeto usa React, Vite, Wouter, Tailwind 4 e Lucide Icons.
 
+## Contas locais de validação
+
+A réplica frontend está configurada para aceitar as contas abaixo durante a validação local e no GitHub Pages. Como as credenciais ficam no bundle do navegador, esta autenticação **não deve ser usada para dados reais ou produção** sem migração para um backend seguro.
+
+| Usuário | Perfil | Senha |
+|---|---|---|
+| `SOUSA` | Gestor | `RGMS1234` |
+| `KARITA` | Administrador | `12345678` |
+| `FELIPE` | Administrador | `12345678` |
+
 ## Rotas principais
 
 A especificação completa de telas, menus, perfis, rótulos e operações está em [`MAPEAMENTO_ORIGINAL.md`](./MAPEAMENTO_ORIGINAL.md).
