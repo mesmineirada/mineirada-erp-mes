@@ -120,3 +120,13 @@
 | Habilitar edição rápida de status nas Ordens de Produção | [x] — status editável diretamente na listagem |
 | Criar filtro clicável de Pedidos Pendentes no Painel | [x] — card navega para a listagem pendente |
 | Validar sincronização entre usuários, testes, build e publicação | [x] — check, testes e build aprovados |
+
+## Auditoria operacional ampliada
+
+| Item | Situação |
+|---|---|
+| Auditar telas, rotas, estados vazios e operações incompletas | [x] — identificados placeholders de faturamento, câmara fria, etiquetas e custos |
+| Habilitar edição rápida de prioridade e prazo nas OPs | [x] — controles inline gravam e auditam alterações |
+| Completar filtro clicável de Pedidos Pendentes no Painel | [x] — rota `/pedidos?status=pendentes` filtra corretamente |
+| Adicionar autocomplete com busca textual para produtos | [x] — campo reutilizável por código ou nome em pedidos e OPs |
+| Corrigir lacunas adicionais e validar persistência, testes e build | [x] — faturamento, pedidos faturados, câmara fria, etiquetas e custos deixaram o placeholder |
