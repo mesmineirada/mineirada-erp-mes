@@ -1,6 +1,23 @@
+import { trpc } from "@/lib/trpc";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { httpBatchLink } from "@trpc/client";
+import superjson from "superjson";
 import { createRoot } from "react-dom/client";
 import App from "./App";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import "./index.css";
 
-createRoot(document.getElementById("root")!).render(<ThemeProvider defaultTheme="light" switchable><App /></ThemeProvider>);
+const queryClient = new QueryClient();
+const trpcClient = trpc.createClient({
+  links: [httpBatchLink({ url: "/api/trpc", transformer: superjson })],
+});
+
+createRoot(document.getElementById("root")!).render(
+  <trpc.Provider client={trpcClient} queryClient={queryClient}>
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider defaultTheme="light" switchable>
+        <App />
+      </ThemeProvider>
+    </QueryClientProvider>
+  </trpc.Provider>,
+);

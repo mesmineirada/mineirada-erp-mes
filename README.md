@@ -110,3 +110,11 @@ Na consulta pública, o usuário pode selecionar uma imagem do Código QR ou abr
 A rota `Estoques > Matéria-Prima` deixou de usar o estado genérico de módulo não implementado. Ela agora lista os registros reais de `data.materials`, calcula o saldo a partir do cadastro atualizado, identifica itens abaixo do mínimo e exibe a última movimentação vinculada por código ou nome do item.
 
 As movimentações registradas em `Almoxarifado > Movimentações` continuam atualizando o campo de estoque do cadastro. A nova tela reflete automaticamente essas alterações, oferece busca e filtro por situação e mantém atalhos para registrar movimentações ou abrir o cadastro da matéria-prima. Nenhum dado demonstrativo foi adicionado.
+
+## Persistência compartilhada entre usuários
+
+O estado operacional da aplicação agora possui uma fonte central em banco de dados na tabela `workspace_state`. A interface mantém o `localStorage` como cache de continuidade, mas consulta o workspace central ao abrir o sistema e envia cada alteração feita por um usuário autenticado no fluxo atual. A sincronização automática ocorre a cada cinco segundos e informa quando uma atualização veio de outro usuário.
+
+A gravação carrega `updatedBy` e `version`. Se a versão local estiver desatualizada, a API rejeita a gravação para evitar sobrescrever alterações mais recentes. A primeira abertura com dados locais compatíveis realiza uma migração única para o banco. A migração inicial usa um estado JSON para preservar os módulos existentes; tabelas normalizadas de produtos, matérias-primas e movimentações podem ser extraídas em uma próxima etapa sem interromper o funcionamento atual.
+
+A infraestrutura full-stack foi habilitada com Drizzle, tRPC, React Query e autenticação do template. O fluxo de credenciais legadas da réplica permanece compatível no navegador; para produção com controle de acesso server-side, o próximo passo recomendado é migrar os usuários SOUSA, KARITA e FELIPE para o provedor de autenticação do backend ou para uma tabela de contas com senha armazenada de forma segura.

@@ -2,7 +2,8 @@
  * Réplica fiel do Mineirada ERP/MES: fundo quente, primário âmbar industrial,
  * sidebar carvão, ícones lineares, densidade operacional e rotas mapeadas.
  */
-import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { trpc } from "./lib/trpc";
 import { useLocation } from "wouter";
 import { useTheme } from "./contexts/ThemeContext";
 import QRCode from "qrcode";
@@ -77,7 +78,6 @@ const MARK = "/manus-storage/mineirada-mark_409315b9.png";
 const MANUAL_ART = "/manus-storage/mineirada-manual-cover_aa645ff9.png";
 const MONITOR_ART = "/manus-storage/mineirada-monitor-illustration_738fae73.png";
 const OPERATOR_ART = "/manus-storage/mineirada-operator_c6faac08.png";
-
 type Role = "gestor" | "admin" | "gerente" | "operador" | "qualidade" | "manutencao" | "user";
 type AuthUser = { username: string; name: string; role: Role };
 type AuthAccount = AuthUser & { password: string };
@@ -185,7 +185,7 @@ const initialData = {
 
 const DATA_STORAGE_KEY = "mineirada_replica_data_v2";
 function usePersistedData() {
-  const [data, setData] = useState<typeof initialData>(() => {
+  const [data, setLocalData] = useState<typeof initialData>(() => {
     try {
       const stored = localStorage.getItem(DATA_STORAGE_KEY);
       if (stored) return { ...initialData, ...JSON.parse(stored) };
@@ -193,7 +193,11 @@ function usePersistedData() {
     } catch { /* iniciar com estrutura vazia */ }
     return initialData;
   });
-  useEffect(() => { localStorage.setItem(DATA_STORAGE_KEY, JSON.stringify(data)); }, [data]);
+  const [hydrated, setHydrated] = useState(false); const [version, setVersion] = useState(0); const actor = useMemo(() => { try { return JSON.parse(localStorage.getItem("mineirada_user_profile") || "{}").username || "Usuário"; } catch { return "Usuário"; } }, []);
+  const remote = trpc.workspace.get.useQuery(undefined, { refetchInterval: 5000, retry: 1 });
+  const saveRemote = trpc.workspace.save.useMutation({ onSuccess: (result) => setVersion(result.version), onError: (error) => window.dispatchEvent(new CustomEvent("mineirada-toast", { detail: error.message.includes("WORKSPACE_VERSION_CONFLICT") ? "Outro usuário atualizou os dados. A tela será sincronizada." : "Não foi possível sincronizar com o banco; os dados permanecem no cache local." })) });
+  useEffect(() => { const payload = remote.data?.data; if (!hydrated && !remote.isLoading) { if (payload && typeof payload === "object") { const next = { ...initialData, ...(payload as Partial<typeof initialData>) }; setLocalData(next); localStorage.setItem(DATA_STORAGE_KEY, JSON.stringify(next)); setVersion(remote.data?.version || 0); } else if (!remote.isError && Object.values(data).some((value) => Array.isArray(value) && value.length > 0)) { saveRemote.mutate({ state: data, updatedBy: actor, version: 0 }); } setHydrated(true); return; } if (hydrated && remote.data && remote.data.version > version && remote.data.data && typeof remote.data.data === "object") { const next = { ...initialData, ...(remote.data.data as Partial<typeof initialData>) }; setLocalData(next); localStorage.setItem(DATA_STORAGE_KEY, JSON.stringify(next)); setVersion(remote.data.version); window.dispatchEvent(new CustomEvent("mineirada-toast", { detail: `Dados sincronizados por ${remote.data.updatedBy || "outro usuário"}.` })); } }, [actor, data, hydrated, remote.data, remote.isError, remote.isLoading, saveRemote, version]);
+  const setData = useCallback((next: typeof initialData) => { setLocalData(next); localStorage.setItem(DATA_STORAGE_KEY, JSON.stringify(next)); if (hydrated) saveRemote.mutate({ state: next, updatedBy: actor, version }); }, [actor, hydrated, saveRemote, version]);
   return [data, setData] as const;
 }
 
@@ -469,7 +473,7 @@ function AppLayout({ children, user, onLogout }: { children: ReactNode; user: Au
   const [sidebarOpen, setSidebarOpen] = useState(false); const [location] = useLocation(); const [toast, setToast] = useState(""); const { theme, toggleTheme } = useTheme();
   useEffect(() => { const onToast = (event: Event) => setToast((event as CustomEvent<string>).detail); window.addEventListener("mineirada-toast", onToast); return () => window.removeEventListener("mineirada-toast", onToast); }, []);
   useEffect(() => { if (!toast) return; const timer = window.setTimeout(() => setToast(""), 2800); return () => window.clearTimeout(timer); }, [toast]);
-  return <div className="app-shell"><Sidebar user={user} onLogout={onLogout} open={sidebarOpen} onClose={() => setSidebarOpen(false)} /><div className="app-main"><header className="topbar"><button className="menu-button" onClick={() => setSidebarOpen(true)}><Menu size={19} /></button><div className="breadcrumb"><span>Mineirada ERP + MES</span><ChevronRight size={14} /><b>{formatTitle(location)}</b></div><div className="topbar-actions"><button className="icon-button theme-toggle" onClick={() => toggleTheme?.()} aria-label={theme === "dark" ? "Ativar modo claro" : "Ativar modo escuro"} title={theme === "dark" ? "Ativar modo claro" : "Ativar modo escuro"}>{theme === "dark" ? <Sun size={17} /> : <Moon size={17} />}</button><div className="profile-chip"><span className="avatar"><CircleUserRound size={16} /></span><div><b>{user.username}</b><small>{roleLabels[user.role]}</small></div><ChevronDown size={14} /></div></div></header><main className="main-scroll">{children}</main></div>{sidebarOpen && <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)} />}{toast && <div className="toast-notice" role="status">{toast}</div>}</div>;
+  return <div className="app-shell"><Sidebar user={user} onLogout={onLogout} open={sidebarOpen} onClose={() => setSidebarOpen(false)} /><div className="app-main"><header className="topbar"><button className="menu-button" onClick={() => setSidebarOpen(true)}><Menu size={19} /></button><div className="breadcrumb"><span>Mineirada ERP + MES</span><ChevronRight size={14} /><b>{formatTitle(location)}</b></div><div className="topbar-actions"><span className="sync-indicator" title="Cadastros e operações são compartilhados entre os usuários autorizados"><Database size={14} /> Dados compartilhados</span><button className="icon-button theme-toggle" onClick={() => toggleTheme?.()} aria-label={theme === "dark" ? "Ativar modo claro" : "Ativar modo escuro"} title={theme === "dark" ? "Ativar modo claro" : "Ativar modo escuro"}>{theme === "dark" ? <Sun size={17} /> : <Moon size={17} />}</button><div className="profile-chip"><span className="avatar"><CircleUserRound size={16} /></span><div><b>{user.username}</b><small>{roleLabels[user.role]}</small></div><ChevronDown size={14} /></div></div></header><main className="main-scroll">{children}</main></div>{sidebarOpen && <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)} />}{toast && <div className="toast-notice" role="status">{toast}</div>}</div>;
 }
 
 function PlaceholderPage({ title, description, construction = false }: { title: string; description: string; construction?: boolean }) {
