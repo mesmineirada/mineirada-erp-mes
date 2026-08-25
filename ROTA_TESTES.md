@@ -7,3 +7,13 @@ Durante a inspeção foi identificado e corrigido um problema de validação: o 
 Também foi validado que os links do menu possuem cobertura no roteador: 49 rotas declaradas e 49 tratadas.
 
 A compilação TypeScript e o build de produção foram executados com código de saída 0 após as correções.
+
+## Nova validação dos módulos pendentes
+
+A rota `/producao/ordens?preview=1` carregou com estado vazio, filtros e contador. O botão **Nova OP** abriu o modal com número de OP, produto, quantidade, entrega, prioridade, status e observações. A ação de salvar valida produto e quantidade maior que zero.
+
+Os módulos de fluxo, movimentações, checklists, não conformidades, manutenção e auditoria foram conectados ao roteador e deixaram de usar `PlaceholderPage`. Os estados iniciais continuam vazios e os registros criados localmente alimentam os indicadores e o histórico de auditoria.
+
+A validação manual também confirmou que o formulário aceita produto e quantidade positiva sem erros de renderização. O fluxo está pronto para testar o salvamento e a persistência local.
+
+O teste manual criou uma ordem local com sucesso: a tabela passou de 0 para 1 ordem e exibiu a OP, produto, quantidade, prioridade e status. O feedback de sucesso apareceu no preview e o estado foi persistido no navegador.

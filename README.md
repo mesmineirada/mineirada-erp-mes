@@ -76,3 +76,11 @@ A interface principal está em `client/src/App.tsx`, com componentes reutilizáv
 ## Limitações conhecidas
 
 Os módulos auxiliares cujo fluxo exigiria persistência no banco apresentam a estrutura visual e estados de operação, mas não gravam em um backend. As ações de exportação exibem confirmação local. A autenticação aceita o usuário de validação configurado para esta réplica, porém deve ser migrada para autenticação server-side antes de qualquer uso com dados reais.
+
+## Módulos operacionais implementados
+
+A réplica agora inclui telas navegáveis para **Ordens de Produção**, **Fluxo de Produção**, **Movimentações de Estoque**, **Checklists**, **Não Conformidades**, **Manutenção** e **Auditoria**. Os registros são persistidos no `localStorage`, começam vazios e só alteram os indicadores quando o usuário os cadastra.
+
+As movimentações atualizam o saldo de matéria-prima quando encontram uma ficha pelo código ou nome. Criações e exclusões dos módulos operacionais geram eventos no histórico de auditoria. As telas de cadastro possuem estado de carregamento inicial, validação de campos obrigatórios, botão de salvamento com animação e mensagens de feedback não bloqueantes.
+
+> Esta implementação continua sendo frontend-only. Para uso produtivo, migre credenciais, registros e auditoria para um backend com autenticação segura, controle de concorrência e trilha de auditoria imutável.

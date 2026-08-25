@@ -1,11 +1,14 @@
-# Correção de rotas e eficiência
+# Módulos pendentes e experiência de cadastros
 
 | Item | Situação |
 |---|---|
-| Levantar erros atuais de TypeScript e runtime | [x] |
-| Auditar todas as rotas declaradas no menu | [x] |
-| Corrigir imports, componentes e tipagens quebradas | [x] |
-| Corrigir lógica de persistência, filtros e criação de registros | [x] |
-| Otimizar renderização e reduzir dados repetidos | [x] |
-| Validar rotas críticas e build de produção | [x] |
-| Salvar checkpoint da correção | [ ] |
+| Auditar placeholders e modelos atuais | [x] |
+| Modelar ordens, movimentações, qualidade, manutenção e auditoria | [x] |
+| Implementar telas e lógica de ordens | [x] |
+| Implementar telas e lógica de movimentações | [x] |
+| Implementar telas e lógica de qualidade | [x] |
+| Implementar telas e lógica de manutenção | [x] |
+| Implementar telas e lógica de auditoria | [x] |
+| Adicionar carregamento e feedback aos cadastros | [x] |
+| Validar rotas, fluxos e build | [x] |
+| Salvar checkpoint | [ ] |
