@@ -192,3 +192,16 @@
 | Permitir editar e excluir requisições de almoxarifado | [x] — CRUD compartilhado com filtros, vínculo de OP/pedido e auditoria |
 | Implementar autorização de OP, separação de MP/suprimentos e liberação para produção | [x] — ação de autorização registra separação e muda OP para Em produção |
 | Validar testes, rotas, responsividade e publicação | [x] — check, 6 testes, build e smoke test de sessões aprovados |
+
+## Auditoria de ciclo de estoque, OPs e permissões
+
+| Item | Situação |
+|---|---|
+| Auditar produto acabado, Câmara Fria, baixa por pedido, movimentações e locais de estoque | [x] — ciclo produto acabado → Câmara Fria → baixa por pedido revisado |
+| Validar vínculos entre cadastros, estoque, pedidos, OPs e almoxarifado | [x] — telas e persistência compartilhada confrontadas |
+| Normalizar tabelas de OPs e requisições com integridade referencial | [x] — tabelas criadas e migrações aplicadas |
+| Garantir edição e exclusão de requisições de almoxarifado | [x] — CRUD existente verificado em rota e estado compartilhado |
+| Implementar autorização de OP com separação de MP/suprimentos e liberação produtiva | [x] — ação atualiza OP normalizada e workspace |
+| Aplicar permissão granular: autorização somente para perfil gerencial | [x] — procedure server-side permite Gestor/Gerente e bloqueia Administrador |
+| Adicionar filtros e ordenação em matérias-primas, embalagens e acabados | [x] — busca, situação e ordenação nas visões operacionais |
+| Validar testes funcionais, sincronização, responsividade e publicação | [x] — 8 testes, check, build, SQL e previews desktop/mobile aprovados |

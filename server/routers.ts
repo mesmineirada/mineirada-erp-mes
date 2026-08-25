@@ -2,10 +2,12 @@ import { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
-import { getNormalizedProducts, getWorkspaceState, loginWithCredentials, migrateWorkspaceToNormalized, saveWorkspaceState } from "./db";
+import { authorizeNormalizedProductionOrder, getNormalizedProducts, getWorkspaceState, loginWithCredentials, migrateWorkspaceToNormalized, saveWorkspaceState } from "./db";
 import { sdk } from "./_core/sdk";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
+
+const managerProcedure = protectedProcedure.use(({ ctx, next }) => { const profile = String(ctx.user?.profile || "").toLowerCase(); if (!['gestor', 'gerente'].includes(profile)) throw new TRPCError({ code: "FORBIDDEN", message: "A autorização de OP é exclusiva para usuários com cargo de gerência." }); return next(); });
 
 export const appRouter = router({
     // if you need to use socket.io, read and register route in server/_core/index.ts, all api should start with '/api/' so that the gateway can route correctly
@@ -35,6 +37,9 @@ export const appRouter = router({
   }),
   catalog: router({
     products: publicProcedure.input(z.object({ query: z.string().max(120).default(""), offset: z.number().int().min(0).default(0), limit: z.number().int().min(1).max(100).default(25) })).query(({ input }) => getNormalizedProducts(input.query, input.offset, input.limit)),
+  }),
+  production: router({
+    authorize: managerProcedure.input(z.object({ number: z.string().min(1).max(128) })).mutation(({ input, ctx }) => authorizeNormalizedProductionOrder(input.number, ctx.user.id)),
   }),
 
   // TODO: add feature routers here, e.g.

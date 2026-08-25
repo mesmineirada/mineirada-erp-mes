@@ -21,6 +21,18 @@ describe("autenticação server-side e catálogo", () => {
     expect(decodedSousa?.openId).not.toBe(decodedKarita?.openId);
   });
 
+  it("bloqueia autorização de OP para perfil administrador", async () => {
+    const adminContext = { ...context, user: { id: 2, openId: "legacy:KARITA", profile: "admin", role: "admin", name: "Karita" } as TrpcContext["user"] };
+    const caller = appRouter.createCaller(adminContext);
+    await expect(caller.production.authorize({ number: "OP-NAO-AUTORIZAR" })).rejects.toMatchObject({ code: "FORBIDDEN" });
+  });
+
+  it("mantém a validação do endpoint gerencial para entrada inválida", async () => {
+    const managerContext = { ...context, user: { id: 1, openId: "legacy:SOUSA", profile: "gestor", role: "admin", name: "Sousa" } as TrpcContext["user"] };
+    const caller = appRouter.createCaller(managerContext);
+    await expect(caller.production.authorize({ number: "" })).rejects.toMatchObject({ code: "BAD_REQUEST" });
+  });
+
   it("expõe o contrato paginado do autocomplete sem aceitar limite inválido", async () => {
     const caller = appRouter.createCaller(context);
     const page = await caller.catalog.products({ query: "", offset: 0, limit: 25 });

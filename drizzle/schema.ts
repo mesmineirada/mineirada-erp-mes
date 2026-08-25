@@ -37,6 +37,7 @@ export const products = mysqlTable("products", {
   salePrice: decimal("salePrice", { precision: 14, scale: 3 }).default("0"),
   shelfLifeDays: int("shelfLifeDays"),
   storageTemperature: varchar("storageTemperature", { length: 64 }),
+  storageLocation: varchar("storageLocation", { length: 128 }),
   minimumStock: decimal("minimumStock", { precision: 14, scale: 3 }).default("0"),
   active: int("active").notNull().default(1),
   createdByUserId: int("createdByUserId").references(() => users.id),
@@ -89,6 +90,47 @@ export const stockMovements = mysqlTable("stock_movements", {
   occurredAt: timestamp("occurredAt").defaultNow().notNull(),
   createdByUserId: int("createdByUserId").references(() => users.id),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export const productionOrders = mysqlTable("production_orders", {
+  id: int("id").autoincrement().primaryKey(),
+  number: varchar("number", { length: 128 }).notNull().unique(),
+  productId: int("productId").references(() => products.id),
+  productName: varchar("productName", { length: 255 }).notNull(),
+  quantity: decimal("quantity", { precision: 14, scale: 3 }).notNull(),
+  unit: varchar("unit", { length: 32 }).notNull().default("UN"),
+  deliveryDate: varchar("deliveryDate", { length: 16 }),
+  priority: varchar("priority", { length: 32 }).notNull().default("Normal"),
+  status: varchar("status", { length: 32 }).notNull().default("Planejada"),
+  linkedOrder: varchar("linkedOrder", { length: 128 }),
+  lot: varchar("lot", { length: 128 }),
+  notes: text("notes"),
+  authorizationStatus: varchar("authorizationStatus", { length: 32 }).notNull().default("Pendente"),
+  materialSeparated: int("materialSeparated").notNull().default(0),
+  suppliesSeparated: int("suppliesSeparated").notNull().default(0),
+  productionReleased: int("productionReleased").notNull().default(0),
+  finishedStocked: int("finishedStocked").notNull().default(0),
+  createdByUserId: int("createdByUserId").references(() => users.id),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export const warehouseRequisitions = mysqlTable("warehouse_requisitions", {
+  id: int("id").autoincrement().primaryKey(),
+  requestNumber: varchar("requestNumber", { length: 128 }).notNull().unique(),
+  productionOrderId: int("productionOrderId").references(() => productionOrders.id),
+  orderNumber: varchar("orderNumber", { length: 128 }),
+  itemKind: mysqlEnum("itemKind", ["rawMaterial", "packaging"]).notNull(),
+  itemId: int("itemId").notNull(),
+  itemName: varchar("itemName", { length: 255 }).notNull(),
+  quantity: decimal("quantity", { precision: 14, scale: 3 }).notNull(),
+  unit: varchar("unit", { length: 32 }).notNull(),
+  status: varchar("status", { length: 32 }).notNull().default("Pendente"),
+  requestedByUserId: int("requestedByUserId").references(() => users.id),
+  requestedByName: varchar("requestedByName", { length: 128 }),
+  requestedAt: timestamp("requestedAt").defaultNow().notNull(),
+  notes: text("notes"),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
 
 export const productionEntries = mysqlTable("production_entries", {
