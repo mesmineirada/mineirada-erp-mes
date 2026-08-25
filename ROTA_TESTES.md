@@ -17,3 +17,7 @@ Os módulos de fluxo, movimentações, checklists, não conformidades, manutenç
 A validação manual também confirmou que o formulário aceita produto e quantidade positiva sem erros de renderização. O fluxo está pronto para testar o salvamento e a persistência local.
 
 O teste manual criou uma ordem local com sucesso: a tabela passou de 0 para 1 ordem e exibiu a OP, produto, quantidade, prioridade e status. O feedback de sucesso apareceu no preview e o estado foi persistido no navegador.
+
+## Revisão responsiva
+
+As telas críticas foram capturadas em 1280px, 768px, 390px e 375px. Em dispositivos móveis, a sidebar transforma-se em menu lateral, a topbar reduz o conteúdo, os botões ocupam a largura disponível, os filtros empilham, os modais respeitam a altura da viewport e os estados vazios não exibem mais cabeçalhos horizontais recortados. O cadastro de clientes foi aberto manualmente e o modal apresentou campos e ações sem overflow no preview.

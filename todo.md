@@ -1,14 +1,13 @@
-# Módulos pendentes e experiência de cadastros
+# Revisão de responsividade
 
 | Item | Situação |
 |---|---|
-| Auditar placeholders e modelos atuais | [x] |
-| Modelar ordens, movimentações, qualidade, manutenção e auditoria | [x] |
-| Implementar telas e lógica de ordens | [x] |
-| Implementar telas e lógica de movimentações | [x] |
-| Implementar telas e lógica de qualidade | [x] |
-| Implementar telas e lógica de manutenção | [x] |
-| Implementar telas e lógica de auditoria | [x] |
-| Adicionar carregamento e feedback aos cadastros | [x] |
-| Validar rotas, fluxos e build | [x] |
-| Salvar checkpoint | [ ] |
+| Auditar layouts, larguras mínimas e overflow | [x] |
+| Ajustar sidebar, topbar e conteúdo por viewport | [x] |
+| Adaptar tabelas, filtros, gráficos e modais | [x] |
+| Melhorar estados vazios e formulários em telas pequenas | [x] |
+| Validar desktop 1280px | [x] |
+| Validar tablet 768px | [x] |
+| Validar iPhone 390px | [x] |
+| Validar celular 375px | [x] |
+| Executar check/build e salvar checkpoint | [x] |
