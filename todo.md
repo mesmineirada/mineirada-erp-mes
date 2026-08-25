@@ -149,3 +149,12 @@
 | Adicionar indicador funcional de conta ativa | [x] — status visual Conta ativa |
 | Tornar Manual do sistema e Sair do sistema funcionais | [x] — navegação para Manual e encerramento de sessão |
 | Validar abertura, fechamento, acessibilidade e responsividade | [x] — foco, aria-expanded, clique externo, mobile e build verificados |
+
+## Manual e acessibilidade do menu de perfil
+
+| Item | Situação |
+|---|---|
+| Vincular Manual do sistema a página ou modal com instruções | [x] — menu abre a rota `/manual` com instruções por módulo |
+| Implementar navegação por teclado no menu do usuário | [x] — setas, Home, End e Escape com foco gerenciado |
+| Carregar dinamicamente nome, usuário e perfil | [x] — dados derivados do usuário autenticado em todas as sessões |
+| Validar rotas, foco, responsividade, testes e build | [x] — rota Manual, foco acessível, mobile, check/test/build aprovados |
