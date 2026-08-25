@@ -68,3 +68,35 @@
 | Implementar consultas e mutations compartilhadas | [x] — procedures tRPC de leitura e gravação com controle de versão |
 | Conectar telas e sincronizar sessões | [x] — React Query, sincronização periódica e cache local de compatibilidade |
 | Testar dados entre SOUSA, KARITA e FELIPE e publicar | [x] — `pnpm check`, `pnpm test`, `pnpm build` e consulta real da tabela aprovados |
+
+## Autenticação server-side e banco normalizado
+
+| Item | Situação |
+|---|---|
+| Auditar login legado, OAuth e modelo JSON atual | [ ] |
+| Migrar acesso para sessão server-side via OAuth | [ ] |
+| Criar tabelas independentes de produtos e matérias-primas | [ ] |
+| Criar tabela de movimentações com vínculo ao item e usuário | [ ] |
+| Migrar dados compatíveis do workspace JSON | [ ] |
+| Conectar telas, testar permissões e publicar | [ ] |
+
+## Pedidos, Painel e seleção de produtos
+
+| Item | Situação |
+|---|---|
+| Auditar modelos e formulários atuais de pedidos, OPs e Painel | [ ] |
+| Adicionar itens com quantidade, valor unitário e total ao pedido | [ ] |
+| Permitir edição de pedidos existentes, especialmente rascunhos | [ ] |
+| Tornar cards do Painel clicáveis com listagem filtrada de OPs | [ ] |
+| Trocar produto da Nova OP por seleção dinâmica de produtos cadastrados | [ ] |
+| Validar vínculos, responsividade, testes e build | [ ] |
+
+## Correção de Estoque e Cadastro
+
+| Item | Situação |
+|---|---|
+| Corrigir a falha de compilação atual | [x] — JSX do modal de pedidos corrigido e tipagem limpa |
+| Exibir itens e saldos atuais em Estoque > Matéria-Prima | [x] — listagem, indicadores, saldo e detalhe por item |
+| Vincular histórico de entradas e saídas somente ao Estoque/Almoxarifado | [x] — histórico em modal exclusivo do Estoque |
+| Manter Cadastro restrito aos dados mestre dos itens | [x] — removidos saldo atual e status operacional do formulário/listagem |
+| Validar rotas, testes, responsividade e build | [x] — rotas verificadas, check/test/build e captura desktop aprovados |
