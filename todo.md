@@ -110,3 +110,13 @@
 | Verificar cards clicáveis do Painel e listagem filtrada de OPs | [x] — cards navegam para filtros Abertas/Atrasadas e a listagem exibe cliente vinculado |
 | Verificar seleção dinâmica de produto no formulário de Nova OP | [x] — dropdown usa produtos cadastrados e preserva registros legados |
 | Corrigir pendências e validar testes/build | [x] — `pnpm check`, `pnpm test` e `pnpm build` aprovados |
+
+## Persistência global e produtividade operacional
+
+| Item | Situação |
+|---|---|
+| Garantir que todo cadastro autenticado seja enviado ao banco compartilhado | [x] — alterações passam pelo workspace central após a hidratação; cache local é fallback |
+| Adicionar autocomplete na seleção de produtos | [x] — seleção dinâmica pesquisável por catálogo |
+| Habilitar edição rápida de status nas Ordens de Produção | [x] — status editável diretamente na listagem |
+| Criar filtro clicável de Pedidos Pendentes no Painel | [x] — card navega para a listagem pendente |
+| Validar sincronização entre usuários, testes, build e publicação | [x] — check, testes e build aprovados |
