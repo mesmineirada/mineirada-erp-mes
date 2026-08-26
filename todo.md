@@ -293,3 +293,14 @@
 | Embutir logo completo e símbolo compacto em Base64 | [ ] |
 | Aplicar logo embutido no login, cabeçalho e sidebar | [ ] |
 | Validar Chrome mobile, login, testes, build e publicação | [ ] |
+
+## Correção de sobreposição do menu do usuário e auditoria final
+
+| Item | Situação |
+|---|---|
+| Auditar menu do usuário, popovers, modais e camadas de sobreposição | [x] — revisados z-index, opacidade, overflow e posicionamento |
+| Corrigir menu do usuário para sobrepor o conteúdo sem deslocá-lo | [x] — superfície opaca e camada superior aplicadas |
+| Garantir fechamento, restauração do layout e comportamento mobile | [x] — Escape, clique externo e posição fixa móvel preservados |
+| Revisar ocorrências semelhantes em menus, filtros e janelas flutuantes | [x] — variáveis de tema sem definição eliminadas do menu |
+| Auditar telas, cadastros, labels, mensagens e estados para pt-BR | [x] — validação `pnpm check:ptbr` aprovada |
+| Validar fluxos, acessibilidade, testes, build e publicação | [x] — 19 testes, TypeScript, build e prévia móvel aprovados |

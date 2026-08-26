@@ -101,7 +101,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .user-popover .logout-button { color: var(--red); }
 
 .app-main { min-width: 0; flex: 1; display: flex; flex-direction: column; }
-.topbar { position: relative; height: 60px; flex: 0 0 60px; display: flex; align-items: center; gap: 12px; padding: 0 24px; border-bottom: 1px solid var(--border); background: rgba(255,253,249,.9); }
+.topbar { position: relative; z-index: 50; height: 60px; flex: 0 0 60px; display: flex; align-items: center; gap: 12px; padding: 0 24px; border-bottom: 1px solid var(--border); background: rgba(255,253,249,.9); }
 .menu-button { display: none; align-items: center; justify-content: center; border: 1px solid var(--border); border-radius: 6px; padding: 7px; background: var(--surface); color: var(--ink); }
 .mobile-topbar-mark { display: none; width: 28px; height: 28px; flex: 0 0 28px; object-fit: contain; border-radius: 6px; background: var(--surface); }
 .breadcrumb { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 12px; }
@@ -557,22 +557,23 @@ html.dark .qr-panel { background: var(--surface-muted); }
 }
 
 /* Menu de perfil alinhado à referência */
-.profile-menu-wrap { position: relative; }
+.profile-menu-wrap { position: relative; z-index: 60; }
+.profile-menu-wrap::after { position: fixed; z-index: -1; inset: 60px 0 0; background: transparent; content: ""; pointer-events: none; }
 .profile-chip { cursor: pointer; border: 0; }
 .profile-menu-wrap .profile-chip:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; }
-.profile-menu { position: absolute; z-index: 40; top: calc(100% + .65rem); right: 0; width: 20rem; padding: .75rem; background: var(--card); color: var(--card-foreground); border: 1px solid var(--border); border-radius: .75rem; box-shadow: 0 18px 42px rgba(42, 31, 20, .18); animation: profile-menu-in .18s ease-out; }
+.profile-menu { position: absolute; z-index: 70; top: calc(100% + .65rem); right: 0; width: 20rem; padding: .75rem; background: var(--surface); color: var(--ink); border: 1px solid var(--border); border-radius: .75rem; box-shadow: 0 18px 42px rgba(42, 31, 20, .18); animation: profile-menu-in .18s ease-out; }
 .profile-menu-head { display: flex; gap: .75rem; align-items: center; padding: .25rem .25rem .75rem; }
 .profile-menu-avatar { display: grid; place-items: center; width: 2.55rem; height: 2.55rem; border-radius: 999px; color: var(--primary); background: color-mix(in srgb, var(--primary) 13%, transparent); }
 .profile-menu-head div { display: grid; gap: .12rem; }
 .profile-menu-head strong { font-size: .95rem; }
-.profile-menu-head span { color: var(--muted-foreground); font-size: .74rem; }
+.profile-menu-head span { color: var(--muted); font-size: .74rem; }
 .profile-active { display: flex; align-items: center; gap: .45rem; margin: 0 .1rem; padding: .6rem .65rem; border-radius: .5rem; color: #168554; background: color-mix(in srgb, #168554 8%, transparent); font-size: .78rem; }
 .profile-menu-divider { height: 1px; margin: .7rem 0; background: var(--border); }
-.profile-menu-item { display: flex; align-items: center; gap: .6rem; width: 100%; padding: .65rem .35rem; border: 0; border-radius: .45rem; background: transparent; color: var(--card-foreground); font: inherit; font-size: .82rem; text-align: left; cursor: pointer; }
-.profile-menu-item:hover, .profile-menu-item:focus-visible { background: var(--accent); outline: none; }
+.profile-menu-item { display: flex; align-items: center; gap: .6rem; width: 100%; padding: .65rem .35rem; border: 0; border-radius: .45rem; background: transparent; color: var(--ink); font: inherit; font-size: .82rem; text-align: left; cursor: pointer; }
+.profile-menu-item:hover, .profile-menu-item:focus-visible { background: var(--surface-muted); outline: none; }
 .profile-menu-logout { color: #b43c3c; }
 @keyframes profile-menu-in { from { opacity: 0; transform: translateY(-4px) scale(.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
-@media (max-width: 560px) { .profile-menu { position: fixed; top: 4.35rem; right: .75rem; left: .75rem; width: auto; } .profile-chip div { display: none; } }
+@media (max-width: 560px) { .profile-menu-wrap::after { inset: 60px 0 0; } .profile-menu { position: fixed; z-index: 70; top: 4.35rem; right: .75rem; left: .75rem; width: auto; } .profile-chip div { display: none; } }
 
 .sidebar-search { display: flex; align-items: center; gap: 7px; margin: 10px 9px 2px; padding: 7px 8px; border: 1px solid rgba(255,255,255,.13); border-radius: 7px; background: rgba(255,255,255,.06); color: rgba(244,239,231,.6); }
 .sidebar-search:focus-within { border-color: rgba(239,176,76,.8); background: rgba(255,255,255,.1); }

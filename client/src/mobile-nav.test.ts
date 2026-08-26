@@ -75,6 +75,15 @@ describe("menu lateral móvel", () => {
     expect(app).not.toContain('label={`${field.replaceAll("_", " ")}');
   });
 
+  it("mantém o menu do usuário como sobreposição opaca e acessível", () => {
+    expect(css).toContain('.topbar { position: relative; z-index: 50;');
+    expect(css).toContain('background: var(--surface); color: var(--ink);');
+    expect(css).toContain('.profile-menu { position: absolute; z-index: 70;');
+    expect(css).toContain('.profile-menu { position: fixed; z-index: 70;');
+    expect(app).toContain('if (!target.closest(".profile-menu-wrap")) setProfileOpen(false)');
+    expect(app).toContain('if (event.key === "Escape")');
+  });
+
   it("oferece pesquisa lateral e ajuda contextual para siglas técnicas", () => {
     expect(app).toContain('aria-label="Pesquisar telas e configurações"');
     expect(app).toContain('placeholder="Pesquisar no menu..."');
