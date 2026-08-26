@@ -7,6 +7,18 @@ describe("menu lateral móvel", () => {
   const css = readFileSync(resolve(process.cwd(), "client/src/index.css"), "utf8");
   const localization = readFileSync(resolve(process.cwd(), "client/src/localization.ts"), "utf8");
 
+  it("oferece configurações de perfil, modo escuro e splash de boas-vindas", () => {
+    expect(app).toContain('navigate("/perfil")');
+    expect(app).toContain('Configurações de Perfil');
+    expect(app).toContain('aria-pressed={theme === "dark"}');
+    expect(app).toContain('setShowSplash(true)');
+    expect(app).toContain('setTimeout(() => setShowSplash(false), 2000)');
+    expect(app).toContain('className="welcome-splash"');
+    expect(app).toContain('localStorage.setItem("mineirada_user_profile", JSON.stringify(next))');
+    expect(css).toContain('.welcome-splash');
+    expect(css).toContain('welcome-splash-out 2s');
+  });
+
   it("mantém o mesmo nome de estado aberto entre JSX e CSS", () => {
     expect(app).toContain('open && "sidebar-open"');
     expect(css).toContain(".sidebar.sidebar-open");

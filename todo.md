@@ -304,3 +304,14 @@
 | Revisar ocorrências semelhantes em menus, filtros e janelas flutuantes | [x] — variáveis de tema sem definição eliminadas do menu |
 | Auditar telas, cadastros, labels, mensagens e estados para pt-BR | [x] — validação `pnpm check:ptbr` aprovada |
 | Validar fluxos, acessibilidade, testes, build e publicação | [x] — 19 testes, TypeScript, build e prévia móvel aprovados |
+
+## Perfil, tema no menu e splash de boas-vindas
+
+| Item | Situação |
+|---|---|
+| Auditar menu de usuário, autenticação e tema atual | [x] — menu, perfil e ThemeContext revisados |
+| Adicionar Configurações de Perfil com edição de dados pessoais | [x] — rota `/perfil` com nome, e-mail e telefone |
+| Permitir selecionar e persistir foto de perfil | [x] — validação de tipo/tamanho, prévia e localStorage |
+| Incluir alternância de Modo Escuro dentro do menu do usuário | [x] — botão com estado Ativo/Inativo e `aria-pressed` |
+| Exibir splash de boas-vindas por 2 segundos com nome e fade-out | [x] — splash controlado por timer e animação de 2 segundos |
+| Validar desktop, celular, acessibilidade, testes, build e publicação | [x] — 20 testes, TypeScript, build e prévia móvel aprovados |
