@@ -68,8 +68,9 @@ describe("menu lateral móvel", () => {
     expect(app).toContain('/manus-storage/mineirada-mark_b4da7297.png');
     expect(app).toContain('/manus-storage/mineirada-industrial-line_2d57a9e5.png');
     expect(app).toContain('className="mobile-topbar-mark"');
-    expect(app).toContain('className="login-illustration"');
+    expect(app).not.toContain('className="login-illustration"');
+    expect(app).toContain('src={MANUAL_ART}');
     expect(css).toContain('.mobile-topbar-mark { display: none;');
-    expect(css).toContain('.login-illustration { display: block;');
+    expect(css).not.toContain('.login-illustration { display: block;');
   });
 });

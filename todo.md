@@ -248,3 +248,11 @@
 | Auditar referências do logo e da ilustração industrial | [x] — assets antigos validados e cópias estáveis publicadas |
 | Corrigir carregamento e dimensionamento responsivo das imagens | [x] — logo completo, marca no cabeçalho e ilustração com regras mobile |
 | Validar imagens em mobile/desktop, testes, build e publicação | [x] — URLs 200, 16 testes, check, build e previews aprovados |
+
+## Reversão da tela de login e correção da sidebar
+
+| Item | Situação |
+|---|---|
+| Restaurar a composição anterior da tela de login | [x] — ilustração removida; login voltou ao logo e campos originais |
+| Corrigir o asset quebrado do logo dentro da sidebar móvel | [x] — símbolo apontado para asset estável publicado |
+| Validar login, sidebar móvel, testes, build e publicação | [x] — asset 200, 16 testes, check, build e validação mobile/desktop |

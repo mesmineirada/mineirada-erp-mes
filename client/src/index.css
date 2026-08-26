@@ -430,11 +430,9 @@ table { width: 100%; border-collapse: collapse; text-align: left; } th { padding
 .login-brand .brand-logo-full + h1,
 .public-page-head .brand-logo-full + h1 { margin-top: 0; }
 .sidebar-brand .sidebar-brand-mark { width: 34px; height: 34px; object-fit: contain; flex: 0 0 34px; }
-.login-illustration { display: block; width: min(264px, 82vw); height: auto; max-height: 150px; object-fit: contain; margin: 0 auto 14px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); box-shadow: 0 5px 14px rgba(73, 52, 35, .08); }
 @media (max-width: 420px) {
   .login-brand .brand-logo-full,
   .public-page-head .brand-logo-full { width: min(205px, 70vw); height: 132px; }
-  .login-illustration { width: min(264px, 88vw); max-height: 112px; margin-bottom: 10px; }
 }
 
 /* Extensões dos fluxos operacionais: dados locais, vínculos visíveis e anexos com leitura rápida. */
