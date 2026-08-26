@@ -291,6 +291,16 @@ table { width: 100%; border-collapse: collapse; text-align: left; } th { padding
 }
 .loading-state svg { animation: mineirada-spin 0.9s linear infinite; }
 @media (prefers-reduced-motion: reduce) { .loading-state svg { animation: none; } }
+.filter-status { display: inline-flex; align-items: center; gap: 5px; min-height: 28px; color: var(--primary-strong); font-size: 11px; font-weight: 600; white-space: nowrap; }
+.confirm-dialog { display: grid; gap: 12px; min-width: min(430px, 82vw); padding: 8px 0 2px; }
+.confirm-dialog h3 { margin: 0; font-size: 18px; }
+.confirm-dialog p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.55; }
+.confirm-icon { width: 44px; height: 44px; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; background: color-mix(in srgb, var(--warning) 18%, transparent); color: var(--warning); }
+.confirm-summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; padding: 11px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface-muted); }
+.confirm-summary span { display: grid; gap: 3px; color: var(--muted); font-size: 10px; }
+.confirm-summary b { color: var(--foreground); font-size: 12px; overflow-wrap: anywhere; }
+@media (max-width: 600px) { .filter-status { order: 4; width: 100%; min-height: 20px; } .confirm-dialog { min-width: 0; } .confirm-summary { grid-template-columns: 1fr; } }
+@media (prefers-reduced-motion: reduce) { .filter-status .spin { animation: none; } }
 
 /* Ajustes responsivos finais: conteúdo sempre legível, sem corte e com rolagem contextual. */
 .profile-chip { min-width: 0; display: inline-flex; align-items: center; gap: 7px; color: var(--ink); }

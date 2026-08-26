@@ -222,3 +222,12 @@
 | Adicionar atalho lateral para Autorizar OP restrito à gerência | [x] — rota filtrada e item `managerOnly` no menu de Produção |
 | Bloquear rolagem e focar o primeiro item ao abrir o menu móvel | [x] — body/main-scroll bloqueados e foco aplicado ao primeiro nav-item |
 | Validar testes, responsividade, acessibilidade e publicação | [x] — 12 testes, check, build e previews móveis aprovados |
+
+## Confirmação de OP e feedback dos estoques
+
+| Item | Situação |
+|---|---|
+| Adicionar modal de confirmação antes de autorizar OP | [x] — confirmação detalha OP, produto, quantidade e libera a mutação somente após confirmar |
+| Ordenar estoques por última movimentação e local de armazenamento | [x] — opções aplicadas em Matéria-Prima e Câmara Fria |
+| Exibir carregamento ao aplicar filtros de estoque | [x] — indicador com `aria-live` e animação compatível com mobile |
+| Validar testes, responsividade, acessibilidade e publicação | [x] — 13 testes, check, build e previews móveis aprovados |

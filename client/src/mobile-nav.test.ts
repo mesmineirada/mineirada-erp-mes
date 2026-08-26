@@ -34,4 +34,15 @@ describe("menu lateral móvel", () => {
     expect(app).toContain("filterOptions");
     expect(app).toContain('value={sortBy} onChange={setSortBy}');
   });
+
+  it("exige confirmação antes da autorização e exibe carregamento de filtros", () => {
+    expect(app).toContain('setConfirmTarget(o)');
+    expect(app).toContain('title="Confirmar autorização da OP"');
+    expect(app).toContain('Confirmar autorização');
+    expect(app).toContain('value="lastMovement"');
+    expect(app).toContain('value="location"');
+    expect(app).toContain('Aplicando filtros…');
+    expect(css).toContain(".filter-status");
+    expect(css).toContain(".confirm-dialog");
+  });
 });
