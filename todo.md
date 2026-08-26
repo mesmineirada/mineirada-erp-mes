@@ -205,3 +205,11 @@
 | Aplicar permissão granular: autorização somente para perfil gerencial | [x] — procedure server-side permite Gestor/Gerente e bloqueia Administrador |
 | Adicionar filtros e ordenação em matérias-primas, embalagens e acabados | [x] — busca, situação e ordenação nas visões operacionais |
 | Validar testes funcionais, sincronização, responsividade e publicação | [x] — 8 testes, check, build, SQL e previews desktop/mobile aprovados |
+
+## Correção do menu lateral móvel
+
+| Item | Situação |
+|---|---|
+| Corrigir abertura e visibilidade da barra lateral no celular | [x] — classe `sidebar-open` alinhada ao CSS móvel |
+| Garantir fechamento, navegação por toque/teclado e sobreposição acessível | [x] — overlay, botão fechar e atributos aria revisados |
+| Validar menu móvel e desktop, testes, build e publicação | [x] — 10 testes, check, build e preview móvel aprovados |
