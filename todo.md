@@ -323,3 +323,13 @@
 | Calcular saudação conforme o horário local do usuário | [x] — hora obtida pelo navegador com `new Date().getHours()` |
 | Exibir Bom dia, Boa tarde ou Boa noite no splash | [x] — manhã, tarde e noite exibidas com nome do usuário |
 | Validar duração, fade-out, idioma, testes e build | [x] — splash de 2 segundos, 21 testes, TypeScript e build aprovados |
+
+## Carregamento durante o despertar automático
+
+| Item | Situação |
+|---|---|
+| Auditar estados atuais de inicialização e autenticação | [x] — fluxo público, login e montagem do React revisados |
+| Criar tela de carregamento para o primeiro acesso | [x] — carregador inline no HTML antes da montagem do aplicativo |
+| Exibir mensagens claras durante a inicialização e em falhas temporárias | [x] — mensagem `Iniciando o sistema...` e barra de progresso |
+| Preservar o acesso público automático sem custos adicionais | [x] — nenhuma rotina de polling ou hospedagem contínua adicionada |
+| Validar responsividade, acessibilidade, testes, build e publicação | [x] — 22 testes, TypeScript, build e validação de acessibilidade aprovados |

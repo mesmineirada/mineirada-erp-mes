@@ -16,7 +16,17 @@
   </head>
 
   <body>
-    <div id="root"></div>
+    <div id="root"><div id="startup-loader" role="status" aria-live="polite"><div class="startup-loader-mark">M</div><strong>Mineirada ERP + MES</strong><span>Iniciando o sistema...</span><i aria-hidden="true"></i></div></div>
+    <style>
+      #startup-loader { min-height: 100vh; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 10px; background: #fbf8f2; color: #24221f; font-family: Arial, sans-serif; }
+      #startup-loader .startup-loader-mark { display: grid; place-items: center; width: 58px; height: 58px; border-radius: 15px; background: #fffdf9; color: #b33b00; box-shadow: 0 8px 24px rgba(70,48,24,.08); font-size: 24px; font-weight: 800; }
+      #startup-loader strong { font-size: 18px; }
+      #startup-loader span { color: #78736d; font-size: 12px; }
+      #startup-loader i { width: 110px; height: 3px; overflow: hidden; margin-top: 5px; border-radius: 99px; background: #eadfd3; }
+      #startup-loader i::after { display: block; width: 42%; height: 100%; border-radius: inherit; background: #b33b00; content: ""; animation: startup-loader-progress 1.05s ease-in-out infinite; }
+      @keyframes startup-loader-progress { 0% { transform: translateX(-110%); } 100% { transform: translateX(250%); } }
+      @media (prefers-reduced-motion: reduce) { #startup-loader i::after { animation: none; width: 100%; } }
+    </style>
     <script type="module" src="/src/main.tsx"></script>
     <script
       defer

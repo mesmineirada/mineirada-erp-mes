@@ -6,6 +6,14 @@ describe("menu lateral móvel", () => {
   const app = readFileSync(resolve(process.cwd(), "client/src/App.tsx"), "utf8");
   const css = readFileSync(resolve(process.cwd(), "client/src/index.css"), "utf8");
   const localization = readFileSync(resolve(process.cwd(), "client/src/localization.ts"), "utf8");
+  const indexHtml = readFileSync(resolve(process.cwd(), "client/index.html"), "utf8");
+
+  it("exibe carregamento inicial enquanto o aplicativo é preparado", () => {
+    expect(indexHtml).toContain('id="startup-loader"');
+    expect(indexHtml).toContain("Iniciando o sistema...");
+    expect(indexHtml).toContain("startup-loader-progress");
+    expect(indexHtml).toContain("prefers-reduced-motion: reduce");
+  });
 
   it("personaliza a saudação do splash pelo horário local", () => {
     expect(app).toContain('const hour = new Date().getHours()');
