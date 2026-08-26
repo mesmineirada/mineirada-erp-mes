@@ -351,3 +351,13 @@
 | Adicionar dica útil em português na tela de carregamento | [x] — dica sobre busca lateral adicionada |
 | Integrar fade-out do carregador com o splash de boas-vindas | [x] — fade-out controlado após montagem do React |
 | Validar acessibilidade, responsividade, testes, build e publicação | [x] — 22 testes, TypeScript e build aprovados |
+
+## Auditoria global de sobreposições e legibilidade
+
+| Item | Situação |
+|---|---|
+| Auditar tabelas, cards, cabeçalhos, badges, menus e modais em todas as telas | [x] — componentes compartilhados e telas densas revisados |
+| Corrigir encavalamento de textos e colunas em listas operacionais | [x] — códigos, produtos, badges e ações com quebra segura |
+| Aplicar regras responsivas para desktop, tablet e celular | [x] — regras específicas até 420px e 700px adicionadas |
+| Garantir truncamento seguro, quebra de linha e rolagem horizontal quando necessária | [x] — tabelas preservam rolagem contextual sem sobrepor conteúdo |
+| Validar foco, contraste, leitura, testes, build e prévias responsivas | [x] — 23 testes, TypeScript, build e prévias mobile aprovados |

@@ -8,6 +8,15 @@ describe("menu lateral móvel", () => {
   const localization = readFileSync(resolve(process.cwd(), "client/src/localization.ts"), "utf8");
   const indexHtml = readFileSync(resolve(process.cwd(), "client/index.html"), "utf8");
 
+  it("evita encavalamento em listas, tabelas e layouts estreitos", () => {
+    expect(css).toContain(".table-wrap td { white-space: normal;");
+    expect(css).toContain("overflow-wrap: anywhere;");
+    expect(css).toContain(".dashboard-list-row > span:first-child");
+    expect(css).toContain("grid-template-columns: minmax(0, 1fr) auto");
+    expect(css).toContain(".lookup-row, .search-card-row { flex-direction: column; }");
+    expect(css).toContain(".page-header, .panel-head, .subsection-head");
+  });
+
   it("exibe carregamento inicial enquanto o aplicativo é preparado", () => {
     expect(indexHtml).toContain('id="startup-loader"');
     expect(indexHtml).toContain('id="root"></div><div id="startup-loader"');
