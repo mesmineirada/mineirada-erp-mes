@@ -315,3 +315,11 @@
 | Incluir alternância de Modo Escuro dentro do menu do usuário | [x] — botão com estado Ativo/Inativo e `aria-pressed` |
 | Exibir splash de boas-vindas por 2 segundos com nome e fade-out | [x] — splash controlado por timer e animação de 2 segundos |
 | Validar desktop, celular, acessibilidade, testes, build e publicação | [x] — 20 testes, TypeScript, build e prévia móvel aprovados |
+
+## Saudação personalizada no splash
+
+| Item | Situação |
+|---|---|
+| Calcular saudação conforme o horário local do usuário | [x] — hora obtida pelo navegador com `new Date().getHours()` |
+| Exibir Bom dia, Boa tarde ou Boa noite no splash | [x] — manhã, tarde e noite exibidas com nome do usuário |
+| Validar duração, fade-out, idioma, testes e build | [x] — splash de 2 segundos, 21 testes, TypeScript e build aprovados |

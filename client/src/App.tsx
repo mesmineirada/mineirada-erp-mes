@@ -577,7 +577,9 @@ function ProfileSettingsPage({ user, onSave }: { user: AuthUser; onSave: (profil
 }
 
 function WelcomeSplash({ user }: { user: AuthUser }) {
-  return <div className="welcome-splash" role="status" aria-live="polite"><div className="welcome-splash-mark"><img src={MARK} alt="" /></div><strong>Bem-vindo, {user.name || user.username}</strong><span>Preparando seu ambiente de trabalho</span></div>;
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? "Bom dia" : hour < 18 ? "Boa tarde" : "Boa noite";
+  return <div className="welcome-splash" role="status" aria-live="polite"><div className="welcome-splash-mark"><img src={MARK} alt="" /></div><strong>{greeting}, {user.name || user.username}</strong><span>Preparando seu ambiente de trabalho</span></div>;
 }
 
 function BillingPage({ data, setData }: { data: typeof initialData; setData: (value: typeof initialData) => void }) {

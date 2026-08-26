@@ -7,6 +7,14 @@ describe("menu lateral móvel", () => {
   const css = readFileSync(resolve(process.cwd(), "client/src/index.css"), "utf8");
   const localization = readFileSync(resolve(process.cwd(), "client/src/localization.ts"), "utf8");
 
+  it("personaliza a saudação do splash pelo horário local", () => {
+    expect(app).toContain('const hour = new Date().getHours()');
+    expect(app).toContain('"Bom dia"');
+    expect(app).toContain('"Boa tarde"');
+    expect(app).toContain('"Boa noite"');
+    expect(app).toContain('setTimeout(() => setShowSplash(false), 2000)');
+  });
+
   it("oferece configurações de perfil, modo escuro e splash de boas-vindas", () => {
     expect(app).toContain('navigate("/perfil")');
     expect(app).toContain('Configurações de Perfil');
