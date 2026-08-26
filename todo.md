@@ -333,3 +333,21 @@
 | Exibir mensagens claras durante a inicialização e em falhas temporárias | [x] — mensagem `Iniciando o sistema...` e barra de progresso |
 | Preservar o acesso público automático sem custos adicionais | [x] — nenhuma rotina de polling ou hospedagem contínua adicionada |
 | Validar responsividade, acessibilidade, testes, build e publicação | [x] — 22 testes, TypeScript, build e validação de acessibilidade aprovados |
+
+## Identidade visual e transição do carregador
+
+| Item | Situação |
+|---|---|
+| Aplicar logo oficial e cores da marca no carregador inicial | [x] — logo embutida oficial e paleta Mineirada aplicadas |
+| Adicionar dica útil em português na tela de carregamento | [x] — dica sobre busca lateral adicionada |
+| Integrar fade-out do carregador com o splash de boas-vindas | [x] — fade-out controlado após montagem do React |
+| Validar acessibilidade, responsividade, testes, build e publicação | [x] — 22 testes, TypeScript e build aprovados |
+
+## Identidade visual e transição do carregador
+
+| Item | Situação |
+|---|---|
+| Aplicar logo oficial e cores da marca no carregador inicial | [x] — logo embutida oficial e paleta Mineirada aplicadas |
+| Adicionar dica útil em português na tela de carregamento | [x] — dica sobre busca lateral adicionada |
+| Integrar fade-out do carregador com o splash de boas-vindas | [x] — fade-out controlado após montagem do React |
+| Validar acessibilidade, responsividade, testes, build e publicação | [x] — 22 testes, TypeScript e build aprovados |

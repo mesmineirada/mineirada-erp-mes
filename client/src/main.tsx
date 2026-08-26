@@ -21,3 +21,7 @@ createRoot(document.getElementById("root")!).render(
     </QueryClientProvider>
   </trpc.Provider>,
 );
+
+window.requestAnimationFrame(() => {
+  window.setTimeout(() => document.getElementById("startup-loader")?.classList.add("app-ready"), 80);
+});

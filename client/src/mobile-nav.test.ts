@@ -10,9 +10,15 @@ describe("menu lateral móvel", () => {
 
   it("exibe carregamento inicial enquanto o aplicativo é preparado", () => {
     expect(indexHtml).toContain('id="startup-loader"');
+    expect(indexHtml).toContain('id="root"></div><div id="startup-loader"');
+    expect(indexHtml).toContain('alt="Mineirada"');
     expect(indexHtml).toContain("Iniciando o sistema...");
+    expect(indexHtml).toContain("Dica: use a busca lateral para encontrar rapidamente qualquer tela.");
+    expect(indexHtml).toContain("background: #fbf8f2");
     expect(indexHtml).toContain("startup-loader-progress");
     expect(indexHtml).toContain("prefers-reduced-motion: reduce");
+    expect(indexHtml).toContain("#startup-loader.app-ready");
+    expect(readFileSync(resolve(process.cwd(), "client/src/main.tsx"), "utf8")).toContain('classList.add("app-ready")');
   });
 
   it("personaliza a saudação do splash pelo horário local", () => {
