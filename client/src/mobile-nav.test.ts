@@ -62,4 +62,14 @@ describe("menu lateral móvel", () => {
     expect(app).toContain('navigate("/auditoria?view=autorizacoes")');
     expect(app).toContain('title={authorizationView ? "Histórico de Autorizações de OP"');
   });
+
+  it("mantém logo, marca móvel e ilustração industrial com assets estáveis", () => {
+    expect(app).toContain('/manus-storage/mineirada-logo_d080bf7c.png');
+    expect(app).toContain('/manus-storage/mineirada-mark_b4da7297.png');
+    expect(app).toContain('/manus-storage/mineirada-industrial-line_2d57a9e5.png');
+    expect(app).toContain('className="mobile-topbar-mark"');
+    expect(app).toContain('className="login-illustration"');
+    expect(css).toContain('.mobile-topbar-mark { display: none;');
+    expect(css).toContain('.login-illustration { display: block;');
+  });
 });

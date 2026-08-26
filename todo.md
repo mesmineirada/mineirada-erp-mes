@@ -240,3 +240,11 @@
 | Criar tela/seção com histórico detalhado de autorizações de OP | [x] — seção dedicada em `/auditoria?view=autorizacoes` |
 | Adicionar confirmação modal antes de exclusões em todos os módulos | [x] — hook compartilhado cobre cadastros, pedidos e operações |
 | Validar acessibilidade, responsividade, testes e publicação | [x] — 15 testes, check, build e previews móveis aprovados |
+
+## Correção de imagens no mobile
+
+| Item | Situação |
+|---|---|
+| Auditar referências do logo e da ilustração industrial | [x] — assets antigos validados e cópias estáveis publicadas |
+| Corrigir carregamento e dimensionamento responsivo das imagens | [x] — logo completo, marca no cabeçalho e ilustração com regras mobile |
+| Validar imagens em mobile/desktop, testes, build e publicação | [x] — URLs 200, 16 testes, check, build e previews aprovados |

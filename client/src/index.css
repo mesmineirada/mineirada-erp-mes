@@ -103,6 +103,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .app-main { min-width: 0; flex: 1; display: flex; flex-direction: column; }
 .topbar { position: relative; height: 60px; flex: 0 0 60px; display: flex; align-items: center; gap: 12px; padding: 0 24px; border-bottom: 1px solid var(--border); background: rgba(255,253,249,.9); }
 .menu-button { display: none; align-items: center; justify-content: center; border: 1px solid var(--border); border-radius: 6px; padding: 7px; background: var(--surface); color: var(--ink); }
+.mobile-topbar-mark { display: none; width: 28px; height: 28px; flex: 0 0 28px; object-fit: contain; border-radius: 6px; background: var(--surface); }
 .breadcrumb { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 12px; }
 .breadcrumb b { color: var(--ink); font-size: 13px; }
 .topbar-actions { display: flex; align-items: center; gap: 10px; margin-left: auto; }
@@ -333,6 +334,7 @@ table { width: 100%; border-collapse: collapse; text-align: left; } th { padding
   body { font-size: 13px; }
   .topbar { height: 56px; flex-basis: 56px; gap: 8px; padding: 0 12px; }
   .menu-button { flex: 0 0 auto; padding: 6px; }
+  .mobile-topbar-mark { display: block; }
   .breadcrumb span, .breadcrumb > svg { display: none; }
   .breadcrumb { flex: 1; }
   .breadcrumb b { font-size: 12px; }
@@ -428,9 +430,11 @@ table { width: 100%; border-collapse: collapse; text-align: left; } th { padding
 .login-brand .brand-logo-full + h1,
 .public-page-head .brand-logo-full + h1 { margin-top: 0; }
 .sidebar-brand .sidebar-brand-mark { width: 34px; height: 34px; object-fit: contain; flex: 0 0 34px; }
+.login-illustration { display: block; width: min(264px, 82vw); height: auto; max-height: 150px; object-fit: contain; margin: 0 auto 14px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); box-shadow: 0 5px 14px rgba(73, 52, 35, .08); }
 @media (max-width: 420px) {
   .login-brand .brand-logo-full,
   .public-page-head .brand-logo-full { width: min(205px, 70vw); height: 132px; }
+  .login-illustration { width: min(264px, 88vw); max-height: 112px; margin-bottom: 10px; }
 }
 
 /* Extensões dos fluxos operacionais: dados locais, vínculos visíveis e anexos com leitura rápida. */
