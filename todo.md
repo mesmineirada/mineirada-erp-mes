@@ -256,3 +256,30 @@
 | Restaurar a composição anterior da tela de login | [x] — ilustração removida; login voltou ao logo e campos originais |
 | Corrigir o asset quebrado do logo dentro da sidebar móvel | [x] — símbolo apontado para asset estável publicado |
 | Validar login, sidebar móvel, testes, build e publicação | [x] — asset 200, 16 testes, check, build e validação mobile/desktop |
+
+## Auditoria de idioma — português do Brasil
+
+| Item | Situação |
+|---|---|
+| Mapear textos visíveis, menus, estados e mensagens em inglês | [x] — varredura de menus, formulários, tabelas e feedbacks realizada |
+| Traduzir e padronizar interface, filtros, modais e feedbacks | [x] — rótulos genéricos e ocorrências residuais padronizados |
+| Revisar acessibilidade e termos operacionais em português do Brasil | [x] — labels, placeholders, aria-labels e situações revisados |
+| Validar auditoria automatizada, testes, build e telas | [x] — 17 testes, check, build e tela móvel aprovados |
+
+## Tradução integral da interface — português do Brasil
+
+| Item | Situação |
+|---|---|
+| Auditar todos os textos visíveis, incluindo rótulos de campos em inglês | [x] — chaves de formulário convertidas para rótulos em pt-BR |
+| Traduzir menus, formulários, tabelas, filtros, botões e modais | [x] — termos visíveis padronizados em toda a interface |
+| Traduzir estados, mensagens, dicas e atributos de acessibilidade | [x] — estados, feedbacks e descrições acessíveis revisados |
+| Executar varredura residual e validar testes, build e telas | [x] — varredura final, 17 testes, check, build e preview móvel aprovados |
+
+## Correção definitiva do logo no Chrome mobile
+
+| Item | Situação |
+|---|---|
+| Auditar usos e tamanho dos logos atuais | [ ] |
+| Embutir logo completo e símbolo compacto em Base64 | [ ] |
+| Aplicar logo embutido no login, cabeçalho e sidebar | [ ] |
+| Validar Chrome mobile, login, testes, build e publicação | [ ] |

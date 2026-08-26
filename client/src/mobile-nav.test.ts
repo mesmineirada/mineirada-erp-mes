@@ -63,10 +63,20 @@ describe("menu lateral móvel", () => {
     expect(app).toContain('title={authorizationView ? "Histórico de Autorizações de OP"');
   });
 
+  it("mantém os rótulos de cadastro em português do Brasil", () => {
+    expect(app).toContain('code: "Código"');
+    expect(app).toContain('name: "Nome"');
+    expect(app).toContain('category: "Categoria"');
+    expect(app).toContain('unit: "Unidade"');
+    expect(app).toContain('cost: "Custo unitário"');
+    expect(app).toContain('min: "Estoque mínimo"');
+    expect(app).toContain('visibleFieldLabels[field] || field.replaceAll');
+    expect(app).not.toContain('label={`${field.replaceAll("_", " ")}');
+  });
+
   it("mantém logo, marca móvel e ilustração industrial com assets estáveis", () => {
-    expect(app).toContain('/manus-storage/mineirada-logo_d080bf7c.png');
-    expect(app).toContain('/manus-storage/mineirada-mark_b4da7297.png');
-    expect(app).toContain('/manus-storage/mineirada-industrial-line_2d57a9e5.png');
+    expect(app).toContain('const LOGO = EMBEDDED_LOGO;');
+    expect(app).toContain('const MARK = EMBEDDED_MARK;');
     expect(app).toContain('className="mobile-topbar-mark"');
     expect(app).not.toContain('className="login-illustration"');
     expect(app).toContain('src={MANUAL_ART}');
