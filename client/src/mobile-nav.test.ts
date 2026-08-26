@@ -5,6 +5,7 @@ import { resolve } from "node:path";
 describe("menu lateral móvel", () => {
   const app = readFileSync(resolve(process.cwd(), "client/src/App.tsx"), "utf8");
   const css = readFileSync(resolve(process.cwd(), "client/src/index.css"), "utf8");
+  const localization = readFileSync(resolve(process.cwd(), "client/src/localization.ts"), "utf8");
 
   it("mantém o mesmo nome de estado aberto entre JSX e CSS", () => {
     expect(app).toContain('open && "sidebar-open"');
@@ -64,14 +65,27 @@ describe("menu lateral móvel", () => {
   });
 
   it("mantém os rótulos de cadastro em português do Brasil", () => {
-    expect(app).toContain('code: "Código"');
-    expect(app).toContain('name: "Nome"');
-    expect(app).toContain('category: "Categoria"');
-    expect(app).toContain('unit: "Unidade"');
-    expect(app).toContain('cost: "Custo unitário"');
-    expect(app).toContain('min: "Estoque mínimo"');
+    expect(localization).toContain('code: "Código"');
+    expect(localization).toContain('name: "Nome"');
+    expect(localization).toContain('category: "Categoria"');
+    expect(localization).toContain('unit: "Unidade"');
+    expect(localization).toContain('cost: "Custo unitário"');
+    expect(localization).toContain('min: "Estoque mínimo"');
     expect(app).toContain('visibleFieldLabels[field] || field.replaceAll');
     expect(app).not.toContain('label={`${field.replaceAll("_", " ")}');
+  });
+
+  it("oferece pesquisa lateral e ajuda contextual para siglas técnicas", () => {
+    expect(app).toContain('aria-label="Pesquisar telas e configurações"');
+    expect(app).toContain('placeholder="Pesquisar no menu..."');
+    expect(app).toContain('const visibleItems = menuItems.filter((item) => canSee(item) && matches(item));');
+    expect(app).toContain('term="OP"');
+    expect(app).toContain('term="BOM"');
+    expect(app).toContain('term="MES"');
+    expect(localization).toContain('OP: { label: "OP", meaning: "Ordem de Produção"');
+    expect(localization).toContain('MP: { label: "MP", meaning: "Matéria-prima"');
+    expect(css).toContain(".sidebar-search");
+    expect(css).toContain(".term-help-popover");
   });
 
   it("mantém logo, marca móvel e ilustração industrial com assets estáveis", () => {

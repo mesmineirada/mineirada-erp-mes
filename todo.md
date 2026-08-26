@@ -275,6 +275,16 @@
 | Traduzir estados, mensagens, dicas e atributos de acessibilidade | [x] — estados, feedbacks e descrições acessíveis revisados |
 | Executar varredura residual e validar testes, build e telas | [x] — varredura final, 17 testes, check, build e preview móvel aprovados |
 
+## Ajuda contextual, pesquisa lateral e glossário
+
+| Item | Situação |
+|---|---|
+| Criar glossário operacional para OP, MP, BOM e MES | [x] — definições centralizadas em `client/src/localization.ts` |
+| Adicionar tooltips acessíveis ao lado das siglas técnicas | [x] — ícones com `title`, `aria-label`, foco e dica responsiva |
+| Implementar pesquisa rápida no menu lateral | [x] — busca hierárquica por telas e grupos, compatível com mobile |
+| Criar validação automática para novas strings em inglês | [x] — comando `pnpm check:ptbr` adicionado ao projeto |
+| Validar mobile, teclado, testes, build e publicação | [x] — 18 testes, check pt-BR, TypeScript, build e prévia móvel aprovados |
+
 ## Correção definitiva do logo no Chrome mobile
 
 | Item | Situação |
