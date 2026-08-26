@@ -213,3 +213,12 @@
 | Corrigir abertura e visibilidade da barra lateral no celular | [x] — classe `sidebar-open` alinhada ao CSS móvel |
 | Garantir fechamento, navegação por toque/teclado e sobreposição acessível | [x] — overlay, botão fechar e atributos aria revisados |
 | Validar menu móvel e desktop, testes, build e publicação | [x] — 10 testes, check, build e preview móvel aprovados |
+
+## Ajustes móveis de Estoques e acesso gerencial
+
+| Item | Situação |
+|---|---|
+| Validar filtros e ordenação das telas de Estoques em celular | [x] — busca, filtro e ordenação visíveis e empilhados sem overflow |
+| Adicionar atalho lateral para Autorizar OP restrito à gerência | [x] — rota filtrada e item `managerOnly` no menu de Produção |
+| Bloquear rolagem e focar o primeiro item ao abrir o menu móvel | [x] — body/main-scroll bloqueados e foco aplicado ao primeiro nav-item |
+| Validar testes, responsividade, acessibilidade e publicação | [x] — 12 testes, check, build e previews móveis aprovados |

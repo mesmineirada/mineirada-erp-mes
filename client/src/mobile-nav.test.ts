@@ -17,5 +17,21 @@ describe("menu lateral móvel", () => {
     expect(app).toContain('aria-label="Abrir menu"');
     expect(css).toContain(".sidebar-overlay");
     expect(css).toContain(".mobile-close, .menu-button");
+    expect(app).toContain('document.body.style.overflow = "hidden"');
+    expect(app).toContain('querySelector<HTMLElement>(".sidebar .nav-item")?.focus()');
+    expect(app).toContain('main-scroll-locked');
+  });
+
+  it("mantém o atalho de autorização restrito ao perfil gerencial", () => {
+    expect(app).toContain('href: "/producao/ordens?view=autorizar"');
+    expect(app).toContain("managerOnly: true");
+    expect(app).toContain('user.role === "gerente"');
+    expect(app).toContain('authorizationView');
+  });
+
+  it("mantém busca, filtro e ordenação no CRUD reutilizável de estoques", () => {
+    expect(app).toContain('const [filterBy, setFilterBy] = useState("Todos")');
+    expect(app).toContain("filterOptions");
+    expect(app).toContain('value={sortBy} onChange={setSortBy}');
   });
 });
