@@ -231,3 +231,12 @@
 | Ordenar estoques por última movimentação e local de armazenamento | [x] — opções aplicadas em Matéria-Prima e Câmara Fria |
 | Exibir carregamento ao aplicar filtros de estoque | [x] — indicador com `aria-live` e animação compatível com mobile |
 | Validar testes, responsividade, acessibilidade e publicação | [x] — 13 testes, check, build e previews móveis aprovados |
+
+## Histórico de autorizações e confirmações de exclusão
+
+| Item | Situação |
+|---|---|
+| Exibir data da última movimentação e local na tabela da Câmara Fria | [x] — colunas mostram última movimentação, local e demais dados de armazenamento |
+| Criar tela/seção com histórico detalhado de autorizações de OP | [x] — seção dedicada em `/auditoria?view=autorizacoes` |
+| Adicionar confirmação modal antes de exclusões em todos os módulos | [x] — hook compartilhado cobre cadastros, pedidos e operações |
+| Validar acessibilidade, responsividade, testes e publicação | [x] — 15 testes, check, build e previews móveis aprovados |

@@ -45,4 +45,21 @@ describe("menu lateral móvel", () => {
     expect(css).toContain(".filter-status");
     expect(css).toContain(".confirm-dialog");
   });
+
+  it("protege exclusões com confirmação compartilhada", () => {
+    expect(app).toContain("function useDeleteConfirmation()");
+    expect(app).toContain('title="Confirmar exclusão"');
+    expect(app).not.toContain("window.confirm(`Excluir");
+    expect(app).toContain("requestDelete(`pedido");
+    expect(app).toContain("requestDelete(`movimentação");
+    expect(app).toContain("requestDelete(`registro de qualidade");
+    expect(app).toContain("requestDelete(`ordem de manutenção");
+  });
+
+  it("exibe dados operacionais da Câmara Fria e histórico dedicado", () => {
+    expect(app).toContain('columns={["Código", "Produto", "Unidade", "Saldo", "Temperatura", "Validade", "Última movimentação", "Local", "Categoria"]}');
+    expect(app).toContain('event.action === "Autorização"');
+    expect(app).toContain('navigate("/auditoria?view=autorizacoes")');
+    expect(app).toContain('title={authorizationView ? "Histórico de Autorizações de OP"');
+  });
 });
