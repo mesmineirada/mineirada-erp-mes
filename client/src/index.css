@@ -657,3 +657,23 @@ html.dark .qr-panel { background: var(--surface-muted); }
 @media (prefers-reduced-motion: reduce) {
   .metric-card-clickable:hover, .stock-card:hover, .dashboard-list-row:active { transform: none; }
 }
+
+/* Importação em lote: prévia legível, estados claros e controles adaptáveis. */
+.clients-page { min-width: 0; }
+.client-tabs { display: flex; gap: 4px; width: min(100%, 1480px); margin: 0 auto; padding: 18px 30px 0; }
+.client-tab { min-height: 35px; padding: 8px 13px; border: 1px solid transparent; border-radius: 7px 7px 0 0; background: transparent; color: var(--muted); font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; }
+.client-tab:hover, .client-tab:focus-visible { background: var(--surface-muted); color: var(--ink); outline: none; }
+.client-tab.active { border-color: var(--border); border-bottom-color: var(--surface); background: var(--surface); color: var(--primary-strong); }
+.import-panel { max-width: 1480px; margin: 0 auto; }
+.import-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 9px; margin-bottom: 15px; }
+.import-actions .input { flex: 1 1 280px; min-width: 0; }
+.import-summary { display: flex; align-items: center; flex-wrap: wrap; gap: 14px; margin: 12px 0; padding: 10px 12px; border: 1px solid var(--border); border-radius: 7px; background: var(--surface-muted); color: var(--muted); font-size: 11px; }
+.import-summary strong { color: var(--ink); }
+.import-valid { color: var(--green); font-weight: 600; }
+.import-invalid { color: var(--red); font-weight: 600; }
+.import-preview { max-width: 100%; border: 1px solid var(--border); border-radius: 8px; }
+.import-preview table { min-width: 760px; }
+.import-preview .muted-inline { display: block; padding: 9px 12px; }
+.import-footer { justify-content: flex-end; margin-top: 12px; }
+html.dark .client-tab.active { border-bottom-color: var(--surface); }
+@media (max-width: 700px) { .client-tabs { padding: 12px 12px 0; overflow-x: auto; } .client-tab { flex: 1 0 auto; } .import-panel { margin: 0; } .import-actions { align-items: stretch; flex-direction: column; } .import-actions .button, .import-actions .input { width: 100%; } .import-summary { gap: 8px 12px; } .import-footer { align-items: stretch; flex-direction: column; } .import-footer .button { width: 100%; } }

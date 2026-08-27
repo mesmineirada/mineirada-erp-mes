@@ -361,3 +361,16 @@
 | Aplicar regras responsivas para desktop, tablet e celular | [x] — regras específicas até 420px e 700px adicionadas |
 | Garantir truncamento seguro, quebra de linha e rolagem horizontal quando necessária | [x] — tabelas preservam rolagem contextual sem sobrepor conteúdo |
 | Validar foco, contraste, leitura, testes, build e prévias responsivas | [x] — 23 testes, TypeScript, build e prévias mobile aprovados |
+
+## Importação em lote por Excel/CSV
+
+| Item | Situação |
+|---|---|
+| Auditar cadastro de clientes, persistência e dependências de planilhas | [x] — workspace compartilhado e cadastro manual preservados |
+| Criar aba de importação de dados no módulo de Cadastros | [x] — abas Cadastro manual e Importar planilha |
+| Ler arquivos XLSX, XLS e CSV no navegador | [x] — biblioteca `xlsx` integrada |
+| Mapear colunas e exibir prévia dos registros antes da gravação | [x] — aliases de colunas e prévia de até 50 linhas |
+| Validar campos obrigatórios, formatos e duplicidades | [x] — Código, Nome, duplicidade existente e repetição na planilha |
+| Persistir registros válidos em lote no banco compartilhado | [x] — `setData` sincroniza com workspace compartilhado |
+| Exibir feedback de sucesso, falhas por linha e opção de baixar relatório | [x] — resumo, toast, relatório CSV e modelo |
+| Validar acessibilidade, responsividade, logins, testes, build e publicação | [x] — controles acessíveis, mobile, 24 testes, check e build |

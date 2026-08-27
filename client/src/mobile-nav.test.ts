@@ -8,6 +8,18 @@ describe("menu lateral móvel", () => {
   const localization = readFileSync(resolve(process.cwd(), "client/src/localization.ts"), "utf8");
   const indexHtml = readFileSync(resolve(process.cwd(), "client/index.html"), "utf8");
 
+  it("oferece importação em lote de clientes por planilha", () => {
+    expect(app).toContain('import * as XLSX from "xlsx"');
+    expect(app).toContain("Importar planilha");
+    expect(app).toContain(".xlsx,.xls,.csv");
+    expect(app).toContain("Código obrigatório");
+    expect(app).toContain("Duplicado na planilha");
+    expect(app).toContain("Baixar modelo");
+    expect(app).toContain("onImport={(rows) => setData");
+    expect(css).toContain(".client-tabs");
+    expect(css).toContain(".import-preview");
+  });
+
   it("evita encavalamento em listas, tabelas e layouts estreitos", () => {
     expect(css).toContain(".table-wrap td { white-space: normal;");
     expect(css).toContain("overflow-wrap: anywhere;");
