@@ -27,6 +27,11 @@ describe("menu lateral móvel", () => {
     expect(app).toContain("Instruções de importação");
     expect(app).toContain("\"Ordem de Produção\": { kind: \"Ordem de Produção\"");
     expect(app).toContain("/producao/ordens/importar");
+    expect(app).toContain("Produto não encontrado no cadastro");
+    expect(app).toContain("Cliente não encontrado no cadastro");
+    expect(app).toContain("Histórico de importações");
+    expect(app).toContain("Confirmar reversão");
+    expect(app).toContain("previousRecords");
     expect(css).toContain(".client-tabs");
     expect(css).toContain(".import-preview");
   });

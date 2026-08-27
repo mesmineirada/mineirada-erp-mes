@@ -410,3 +410,15 @@
 | Gerar modelo XLSX formatado por tipo de cadastro | [x] — aba Dados, larguras ajustadas e download XLSX |
 | Incluir aba de instruções e exemplo não persistido | [x] — aba Instruções com fluxo e exemplo local |
 | Validar acessibilidade, persistência, testes, build e publicação | [x] — 24 testes, TypeScript, build e preview móvel aprovados |
+
+## Validação de vínculos e reversão de importações
+
+| Item | Situação |
+|---|---|
+| Validar produtos referenciados contra o cadastro antes da importação | [x] — OPs e receitas conferem código ou nome do produto |
+| Validar clientes referenciados contra o cadastro antes da importação | [x] — cliente opcional de OP é conferido no cadastro |
+| Exibir erro por linha para vínculos inexistentes | [x] — Produto/Cliente não encontrado aparece na prévia e no CSV de erros |
+| Criar histórico compartilhado das importações concluídas | [x] — data, usuário, cadastro, quantidades e situação persistidos |
+| Armazenar snapshot anterior para reversão segura | [x] — estado anterior e registros importados armazenados por lote |
+| Adicionar tela/ação para reverter uma importação | [x] — `/auditoria/importacoes` com confirmação e bloqueio após reversão |
+| Validar permissões, acessibilidade, testes, build e publicação | [x] — 24 testes, TypeScript, build e prévias aprovados |
