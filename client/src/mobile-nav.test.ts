@@ -12,10 +12,10 @@ describe("menu lateral móvel", () => {
     expect(app).toContain('import * as XLSX from "xlsx"');
     expect(app).toContain("Importar planilha");
     expect(app).toContain(".xlsx,.xls,.csv");
-    expect(app).toContain("Código obrigatório");
-    expect(app).toContain("Duplicado na planilha");
+    expect(app).toContain("obrigatório");
+    expect(app).toContain("Código duplicado na planilha");
     expect(app).toContain("Baixar modelo");
-    expect(app).toContain("onImport={(rows) => setData");
+    expect(app).toContain("Importação em lote");
     expect(css).toContain(".client-tabs");
     expect(css).toContain(".import-preview");
   });

@@ -374,3 +374,15 @@
 | Persistir registros válidos em lote no banco compartilhado | [x] — `setData` sincroniza com workspace compartilhado |
 | Exibir feedback de sucesso, falhas por linha e opção de baixar relatório | [x] — resumo, toast, relatório CSV e modelo |
 | Validar acessibilidade, responsividade, logins, testes, build e publicação | [x] — controles acessíveis, mobile, 24 testes, check e build |
+
+## Importação ampliada e atualização por código
+
+| Item | Situação |
+|---|---|
+| Permitir atualizar clientes existentes pelo Código | [x] — prévia identifica Atualizar e substitui pelo mesmo código |
+| Generalizar importador para fornecedores, produtos e matérias-primas | [x] — definições, aliases, modelos e rotas dedicadas |
+| Adicionar importação de receitas com validação de produto e lote | [x] — rota de Receita com campos de produto, lote, rendimento e instruções |
+| Exibir ação por linha: criar, atualizar ou rejeitar | [x] — status visível na prévia antes da confirmação |
+| Disponibilizar modelo de planilha por tipo de cadastro | [x] — modelo CSV contextual por cadastro |
+| Registrar criação e atualização em auditoria compartilhada | [x] — evento com contagem de criações e atualizações |
+| Validar dados, logins, responsividade, testes, build e publicação | [x] — 24 testes, TypeScript, build e prévias responsivas aprovados |
