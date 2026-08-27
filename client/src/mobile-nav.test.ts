@@ -16,6 +16,12 @@ describe("menu lateral móvel", () => {
     expect(app).toContain("Código duplicado na planilha");
     expect(app).toContain("Baixar modelo");
     expect(app).toContain("Importação em lote");
+    expect(app).toContain("Receita: { kind: \"Receita\"");
+    expect(app).toContain("Embalagem: { kind: \"Embalagem\"");
+    expect(app).toContain("Funcionário: { kind: \"Funcionário\"");
+    expect(app).toContain("/cadastros/embalagens/importar");
+    expect(app).toContain("/cadastros/funcionarios/importar");
+    expect(app).toContain("fields: [\"code\", \"product\"");
     expect(css).toContain(".client-tabs");
     expect(css).toContain(".import-preview");
   });

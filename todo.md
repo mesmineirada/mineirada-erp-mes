@@ -386,3 +386,15 @@
 | Disponibilizar modelo de planilha por tipo de cadastro | [x] — modelo CSV contextual por cadastro |
 | Registrar criação e atualização em auditoria compartilhada | [x] — evento com contagem de criações e atualizações |
 | Validar dados, logins, responsividade, testes, build e publicação | [x] — 24 testes, TypeScript, build e prévias responsivas aprovados |
+
+## Importação de receitas, embalagens e funcionários
+
+| Item | Situação |
+|---|---|
+| Adicionar código às receitas para atualização de registros existentes | [x] — campo Código incluído no modelo e no formulário |
+| Permitir atualizar receitas pelo código durante a importação | [x] — prévia e mesclagem usam o código como chave |
+| Adicionar importação em lote de embalagens | [x] — rota, botão, aliases e modelo contextual |
+| Adicionar importação em lote de funcionários | [x] — rota, botão, aliases e validações |
+| Manter suporte a XLS, XLSX e CSV, prévia, validação e relatórios | [x] — fluxo genérico preservado para todos os cadastros |
+| Registrar criações e atualizações na auditoria compartilhada | [x] — contagem de criações e atualizações registrada |
+| Validar acessibilidade, logins, responsividade, testes, build e publicação | [x] — 24 testes, TypeScript, build e prévias aprovados |
