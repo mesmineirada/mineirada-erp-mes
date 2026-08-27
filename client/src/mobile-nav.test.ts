@@ -22,6 +22,11 @@ describe("menu lateral móvel", () => {
     expect(app).toContain("/cadastros/embalagens/importar");
     expect(app).toContain("/cadastros/funcionarios/importar");
     expect(app).toContain("fields: [\"code\", \"product\"");
+    expect(app).toContain("Colunas para atualização parcial");
+    expect(app).toContain("downloadXlsxTemplate");
+    expect(app).toContain("Instruções de importação");
+    expect(app).toContain("\"Ordem de Produção\": { kind: \"Ordem de Produção\"");
+    expect(app).toContain("/producao/ordens/importar");
     expect(css).toContain(".client-tabs");
     expect(css).toContain(".import-preview");
   });

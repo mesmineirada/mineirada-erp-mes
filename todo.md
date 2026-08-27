@@ -398,3 +398,15 @@
 | Manter suporte a XLS, XLSX e CSV, prévia, validação e relatórios | [x] — fluxo genérico preservado para todos os cadastros |
 | Registrar criações e atualizações na auditoria compartilhada | [x] — contagem de criações e atualizações registrada |
 | Validar acessibilidade, logins, responsividade, testes, build e publicação | [x] — 24 testes, TypeScript, build e prévias aprovados |
+
+## Atualização parcial, OPs e modelos XLSX
+
+| Item | Situação |
+|---|---|
+| Adicionar seleção de colunas para atualização parcial | [x] — checkboxes por coluna com chave de identificação protegida |
+| Preservar campos existentes quando não forem selecionados | [x] — mesclagem parcial aplicada somente a registros existentes |
+| Adicionar importação em lote de Ordens de Produção | [x] — rota, botão e campos de OP integrados |
+| Validar vínculos de OP com produto, cliente e datas | [x] — produto, cliente, quantidade, entrega, prioridade e situação |
+| Gerar modelo XLSX formatado por tipo de cadastro | [x] — aba Dados, larguras ajustadas e download XLSX |
+| Incluir aba de instruções e exemplo não persistido | [x] — aba Instruções com fluxo e exemplo local |
+| Validar acessibilidade, persistência, testes, build e publicação | [x] — 24 testes, TypeScript, build e preview móvel aprovados |
