@@ -723,3 +723,14 @@ html.dark .client-tab.active { border-bottom-color: var(--surface); }
   .table-wrap:not(.table-wrap-empty) td > *,
   .table-wrap:not(.table-wrap-empty) th > * { max-width: none; }
 }
+
+.barcode-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; }
+.barcode-panel { min-width: 0; padding: 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); overflow: hidden; }
+.barcode-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
+.barcode-head > div { min-width: 0; display: grid; gap: 3px; }
+.barcode-head strong, .barcode-head span { overflow-wrap: anywhere; }
+.barcode-head span { color: var(--muted); font-size: 11px; }
+.barcode-panel svg { display: block; max-width: 100%; height: auto; background: #fff; }
+.public-progress { display: grid; gap: 6px; margin: 14px 0; padding: 12px; border-left: 3px solid var(--primary); border-radius: 8px; background: var(--surface-muted); color: var(--foreground); font-size: 12px; line-height: 1.45; }
+.public-progress strong { font-size: 13px; }
+@media (max-width: 640px) { .barcode-grid { grid-template-columns: 1fr; } .barcode-head { align-items: stretch; flex-direction: column; } .barcode-head .button { width: 100%; } .barcode-panel svg { width: 100%; } }

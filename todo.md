@@ -445,3 +445,15 @@
 | Revisar estados vazios, carregamento, erros, idioma e acessibilidade | [x] — pt-BR, feedbacks, foco e estados revisados |
 | Validar desktop, tablet, celular, testes, TypeScript e build | [x] — tabela móvel corrigida; 24 testes, check, pt-BR e build aprovados |
 | Salvar e publicar relatório final da auditoria | [x] — pendente apenas do checkpoint desta auditoria |
+
+## Rastreabilidade pública, QR Code e códigos de barras
+
+| Item | Situação |
+|---|---|
+| Auditar consulta pública de pedidos sem login | [x] — rota pública aceita consulta por QR sem autenticação |
+| Exibir etapa atual da produção, OP, prazo e situação do pedido | [x] — etapa derivada de apontamentos e Câmara Fria após conclusão |
+| Validar vínculos entre pedido, OP, produto, lote e apontamentos | [x] — OP vinculada ao pedido e apontamentos por número da OP |
+| Auditar geração e leitura do QR Code do pedido | [x] — URL pública pré-carregada e leitor nativo/jsQR preservados |
+| Auditar códigos de barras de produtos, matérias-primas e OPs internas | [x] — CODE128 na tela Etiquetas e códigos |
+| Corrigir validações, mensagens e estados de erro dos códigos | [x] — feedbacks, download SVG e estados de erro acessíveis |
+| Validar segurança pública, acessibilidade, mobile, testes, build e publicação | [x] — 26 testes, pt-BR, check, build e prévias móveis aprovados |

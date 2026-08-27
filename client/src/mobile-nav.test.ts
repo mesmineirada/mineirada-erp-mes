@@ -170,6 +170,26 @@ describe("menu lateral móvel", () => {
     expect(css).toContain(".term-help-popover");
   });
 
+  it("oferece rastreabilidade pública por QR sem login e mostra a etapa atual", () => {
+    expect(app).toContain('location.match(/^\\/consulta-pedido\\/(.+)$/)');
+    expect(app).toContain('Nome (opcional)');
+    expect(app).toContain('getProductionProgress');
+    expect(app).toContain('Etapa atual');
+    expect(app).toContain('Produto acabado encaminhado para a Câmara Fria.');
+    expect(app).toContain('Último apontamento:');
+  });
+
+  it("gera códigos de barras internos para produtos, matérias-primas e OPs", () => {
+    expect(app).toContain('import JsBarcode from "jsbarcode"');
+    expect(app).toContain('format: "CODE128"');
+    expect(app).toContain('Códigos de barras internos');
+    expect(app).toContain('Produto acabado');
+    expect(app).toContain('Matéria-prima');
+    expect(app).toContain('Ordem de Produção');
+    expect(css).toContain(".barcode-grid");
+    expect(css).toContain(".public-progress");
+  });
+
   it("mantém logo, marca móvel e ilustração industrial com assets estáveis", () => {
     expect(app).toContain('const LOGO = EMBEDDED_LOGO;');
     expect(app).toContain('const MARK = EMBEDDED_MARK;');
