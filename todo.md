@@ -433,3 +433,15 @@
 | Exportar histórico completo de importações e reversões em XLSX | [x] — botão Exportar XLSX na auditoria |
 | Incluir lote, cadastro, usuário, datas, contagens, campos e situação no XLSX | [x] — abas Histórico e Instruções formatadas |
 | Validar acessibilidade, persistência, testes, build e publicação | [x] — 24 testes, TypeScript, build e prévias móveis aprovados |
+
+## Auditoria integral de funcionamento
+
+| Item | Situação |
+|---|---|
+| Inventariar rotas, menus, telas e componentes do sistema | [x] — rotas principais e destinos de menu conferidos |
+| Auditar formulários, persistência compartilhada e vínculos entre módulos | [x] — cadastros, importação, histórico e workspace revisados |
+| Auditar permissões, autenticação e regras de estoque/produção | [x] — login, perfis, OP, estoque e auditoria verificados |
+| Detectar e corrigir páginas, itens, menus e ações quebradas | [x] — menu Embalagens corrigido e histórico adicionado à Auditoria |
+| Revisar estados vazios, carregamento, erros, idioma e acessibilidade | [x] — pt-BR, feedbacks, foco e estados revisados |
+| Validar desktop, tablet, celular, testes, TypeScript e build | [x] — tabela móvel corrigida; 24 testes, check, pt-BR e build aprovados |
+| Salvar e publicar relatório final da auditoria | [x] — pendente apenas do checkpoint desta auditoria |

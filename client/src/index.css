@@ -713,3 +713,13 @@ html.dark .client-tab.active { border-bottom-color: var(--surface); }
     white-space: normal;
   }
 }
+
+/* Auditoria global: tabelas densas não comprimem palavras em telas estreitas; a rolagem fica contida no painel. */
+@media (max-width: 640px) {
+  .table-wrap:not(.table-wrap-empty) { overflow-x: auto; overscroll-behavior-inline: contain; scrollbar-width: thin; }
+  .table-wrap:not(.table-wrap-empty) table { width: max-content; min-width: 720px; table-layout: auto; }
+  .table-wrap:not(.table-wrap-empty) th,
+  .table-wrap:not(.table-wrap-empty) td { white-space: nowrap; overflow-wrap: normal; word-break: normal; }
+  .table-wrap:not(.table-wrap-empty) td > *,
+  .table-wrap:not(.table-wrap-empty) th > * { max-width: none; }
+}
