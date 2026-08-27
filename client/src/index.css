@@ -734,3 +734,19 @@ html.dark .client-tab.active { border-bottom-color: var(--surface); }
 .public-progress { display: grid; gap: 6px; margin: 14px 0; padding: 12px; border-left: 3px solid var(--primary); border-radius: 8px; background: var(--surface-muted); color: var(--foreground); font-size: 12px; line-height: 1.45; }
 .public-progress strong { font-size: 13px; }
 @media (max-width: 640px) { .barcode-grid { grid-template-columns: 1fr; } .barcode-head { align-items: stretch; flex-direction: column; } .barcode-head .button { width: 100%; } .barcode-panel svg { width: 100%; } }
+
+.camera-scanner { position: fixed; inset: 0; z-index: 120; display: grid; align-content: center; justify-items: center; gap: 12px; padding: 18px; background: rgba(24, 25, 22, .86); color: #fff; }
+.camera-scanner-head { width: min(560px, 100%); display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.camera-scanner-head strong { font-size: 15px; }
+.camera-preview { width: min(560px, 100%); max-height: 62vh; object-fit: cover; border-radius: 14px; border: 2px solid var(--primary); background: #111; }
+.camera-scanner p, .camera-scanner small { width: min(560px, 100%); margin: 0; line-height: 1.45; }
+.camera-guide { position: absolute; width: min(72vw, 360px); aspect-ratio: 1.65; border: 2px solid rgba(255,255,255,.92); border-radius: 12px; pointer-events: none; }
+.scanner-form, .fallback-code { max-width: 760px; }
+.settings-list { max-width: 760px; }
+.setting-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 0; border-bottom: 1px solid var(--border); cursor: pointer; }
+.setting-row:last-child { border-bottom: 0; }
+.setting-row > span { min-width: 0; display: grid; gap: 4px; }
+.setting-row small { color: var(--muted); line-height: 1.4; }
+.setting-row input { flex: 0 0 auto; width: 20px; height: 20px; accent-color: var(--primary); }
+@media (max-width: 640px) { .camera-scanner { align-content: start; padding-top: max(18px, env(safe-area-inset-top)); } .camera-preview { max-height: 55vh; } .camera-guide { width: 78vw; } .setting-row { align-items: flex-start; } }
+@media (prefers-reduced-motion: reduce) { .camera-scanner *, .scanner-form * { animation: none !important; transition: none !important; } }

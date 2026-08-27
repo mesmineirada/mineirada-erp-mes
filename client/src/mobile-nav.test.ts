@@ -190,6 +190,25 @@ describe("menu lateral móvel", () => {
     expect(css).toContain(".public-progress");
   });
 
+  it("oferece câmera híbrida e fallback digitável após três tentativas", () => {
+    expect(app).toContain("navigator.mediaDevices?.getUserMedia");
+    expect(app).toContain('formats: ["qr_code", "code_128", "ean_13", "ean_8", "upc_a", "upc_e"]');
+    expect(app).toContain("onFallbackRef.current()");
+    expect(app).toContain("next >= 3");
+    expect(app).toContain("Digite o código para continuar");
+    expect(app).toContain("Leitor de códigos");
+  });
+
+  it("atualiza OP e estoque por código e permite controlar o rastreio público", () => {
+    expect(app).toContain('title="Ler código operacional"');
+    expect(app).toContain('"Atualização de OP"');
+    expect(app).toContain('"Movimentação de estoque"');
+    expect(app).toContain('title="Visibilidade do rastreio público"');
+    expect(app).toContain("showProductionStage");
+    expect(app).toContain("showLocation");
+    expect(app).toContain('href: "/admin/rastreio-publico"');
+  });
+
   it("mantém logo, marca móvel e ilustração industrial com assets estáveis", () => {
     expect(app).toContain('const LOGO = EMBEDDED_LOGO;');
     expect(app).toContain('const MARK = EMBEDDED_MARK;');

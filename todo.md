@@ -457,3 +457,15 @@
 | Auditar códigos de barras de produtos, matérias-primas e OPs internas | [x] — CODE128 na tela Etiquetas e códigos |
 | Corrigir validações, mensagens e estados de erro dos códigos | [x] — feedbacks, download SVG e estados de erro acessíveis |
 | Validar segurança pública, acessibilidade, mobile, testes, build e publicação | [x] — 26 testes, pt-BR, check, build e prévias móveis aprovados |
+
+## Leitura por câmera e atualização operacional por código
+
+| Item | Situação |
+|---|---|
+| Adicionar leitura de QR Code pela câmera do dispositivo | [x] — câmera traseira, BarcodeDetector e fallback jsQR |
+| Adicionar leitura de código de barras pela câmera do dispositivo | [x] — QR, CODE128, EAN e UPC suportados |
+| Manter digitação manual e abrir fallback após três tentativas incompletas | [x] — janela de digitação aberta após três falhas |
+| Atualizar status do pedido mediante código identificado e confirmação | [x] — OP identificada passa para Em produção e gera auditoria |
+| Registrar movimentação de estoque vinculada ao código e à operação | [x] — entrada, saída e ajuste atualizam saldo e histórico |
+| Criar configurações de visibilidade da página pública de rastreio | [x] — tela administrativa com preferências por campo |
+| Validar segurança, permissões, acessibilidade, mobile, testes, build e publicação | [x] — 28 testes, pt-BR, TypeScript, build e prévias aprovados |
