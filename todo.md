@@ -422,3 +422,14 @@
 | Armazenar snapshot anterior para reversão segura | [x] — estado anterior e registros importados armazenados por lote |
 | Adicionar tela/ação para reverter uma importação | [x] — `/auditoria/importacoes` com confirmação e bloqueio após reversão |
 | Validar permissões, acessibilidade, testes, build e publicação | [x] — 24 testes, TypeScript, build e prévias aprovados |
+
+## Simulação e exportação do histórico de importações
+
+| Item | Situação |
+|---|---|
+| Adicionar modo de simulação sem gravar dados | [x] — opção Simular sem gravar mantém a prévia aberta |
+| Mostrar resumo de criar, atualizar, rejeitar e vínculos inválidos na simulação | [x] — resumo e validações permanecem visíveis antes da gravação |
+| Permitir confirmar a gravação somente após a simulação | [x] — alternância explícita entre simular e importar |
+| Exportar histórico completo de importações e reversões em XLSX | [x] — botão Exportar XLSX na auditoria |
+| Incluir lote, cadastro, usuário, datas, contagens, campos e situação no XLSX | [x] — abas Histórico e Instruções formatadas |
+| Validar acessibilidade, persistência, testes, build e publicação | [x] — 24 testes, TypeScript, build e prévias móveis aprovados |
