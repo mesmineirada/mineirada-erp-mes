@@ -469,3 +469,14 @@
 | Registrar movimentação de estoque vinculada ao código e à operação | [x] — entrada, saída e ajuste atualizam saldo e histórico |
 | Criar configurações de visibilidade da página pública de rastreio | [x] — tela administrativa com preferências por campo |
 | Validar segurança, permissões, acessibilidade, mobile, testes, build e publicação | [x] — 28 testes, pt-BR, TypeScript, build e prévias aprovados |
+
+## Confirmação de saída e identificação da leitura
+
+| Item | Situação |
+|---|---|
+| Adicionar confirmação extra antes de concluir uma saída de estoque | [x] — modal explícito antes da gravação |
+| Exibir item, código, quantidade e saldo resultante na confirmação | [x] — resumo da operação e saldo projetado exibidos |
+| Registrar automaticamente nome do operador em cada leitura | [x] — nome do usuário autenticado gravado |
+| Registrar dispositivo e navegador utilizados na leitura | [x] — computador/celular e navegador registrados |
+| Exibir os metadados no histórico e na auditoria | [x] — colunas Operador e Dispositivo adicionadas |
+| Validar acessibilidade, segurança, mobile, testes, build e publicação | [x] — 30 testes, pt-BR, TypeScript, build e prévia aprovados |

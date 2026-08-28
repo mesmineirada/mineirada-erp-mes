@@ -190,6 +190,22 @@ describe("menu lateral móvel", () => {
     expect(css).toContain(".public-progress");
   });
 
+  it("exige confirmação extra antes de uma saída de estoque", () => {
+    expect(app).toContain('title="Confirmar saída de estoque"');
+    expect(app).toContain("Saldo após saída");
+    expect(app).toContain("Confirmar saída");
+    expect(app).toContain("!confirmedExit");
+  });
+
+  it("registra operador, dispositivo e navegador em cada leitura", () => {
+    expect(app).toContain("const operator = user.name || user.username");
+    expect(app).toContain('device?: string; browser?: string');
+    expect(app).toContain("operator, device, browser");
+    expect(app).toContain("Operador: ${operator}");
+    expect(app).toContain("Dispositivo: ${device}");
+    expect(app).toContain("Navegador: ${browser}");
+  });
+
   it("oferece câmera híbrida e fallback digitável após três tentativas", () => {
     expect(app).toContain("navigator.mediaDevices?.getUserMedia");
     expect(app).toContain('formats: ["qr_code", "code_128", "ean_13", "ean_8", "upc_a", "upc_e"]');
