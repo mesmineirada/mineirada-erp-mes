@@ -480,3 +480,16 @@
 | Registrar dispositivo e navegador utilizados na leitura | [x] — computador/celular e navegador registrados |
 | Exibir os metadados no histórico e na auditoria | [x] — colunas Operador e Dispositivo adicionadas |
 | Validar acessibilidade, segurança, mobile, testes, build e publicação | [x] — 30 testes, pt-BR, TypeScript, build e prévia aprovados |
+
+## Correção complementar solicitada por vídeo
+
+| Item | Situação |
+|---|---|
+| Analisar o vídeo e identificar a solicitação do usuário | [x] — a última tela corresponde à Câmara Fria e deve listar Produto Acabado |
+| Localizar o fluxo afetado no sistema | [x] — `ColdStoragePage` filtrava produtos por parâmetros de armazenamento |
+| Implementar a correção complementar preservando os fluxos existentes | [x] — Câmara Fria agora usa o catálogo completo de produtos acabados, com saldo e movimentos derivados |
+| Validar desktop, celular, acessibilidade, testes, build e publicação | [x] — 31 testes, TypeScript e build aprovados; preview protegido por login verificado |
+
+## Correção complementar solicitada pelo usuário
+
+- [x] Incluir a categoria Produto Acabado na última tela de estoque mostrada no vídeo, com listagem, saldo e movimentações integrados.

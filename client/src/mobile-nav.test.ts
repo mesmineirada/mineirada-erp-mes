@@ -225,6 +225,12 @@ describe("menu lateral móvel", () => {
     expect(app).toContain('href: "/admin/rastreio-publico"');
   });
 
+  it("lista produtos acabados na tela da Câmara Fria mesmo sem parâmetros completos", () => {
+    expect(app).toContain('const allRows = data.products;');
+    expect(app).toContain('title="Câmara Fria"');
+    expect(app).toContain('Cadastrar produto acabado');
+    expect(app).toContain('empty="Cadastre produtos acabados para acompanhar a Câmara Fria; parâmetros de armazenamento podem ser preenchidos depois."');
+  });
   it("mantém logo, marca móvel e ilustração industrial com assets estáveis", () => {
     expect(app).toContain('const LOGO = EMBEDDED_LOGO;');
     expect(app).toContain('const MARK = EMBEDDED_MARK;');
