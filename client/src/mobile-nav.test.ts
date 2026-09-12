@@ -247,6 +247,14 @@ describe("menu lateral móvel", () => {
     expect(app).toContain('Estoque insuficiente para concluir a OP');
     expect(app).toContain('MOV-MP-${target.number}-${material.code || material.name}');
   });
+  it("calcula e exibe o custo total da receita pelos custos das matérias-primas", () => {
+    expect(app).toContain('function numericMoney');
+    expect(app).toContain('const calculateRecipeCost');
+    expect(app).toContain('numericMoney(material?.cost) * numericQuantity(ingredient.quantity)');
+    expect(app).toContain('cost: totalCost > 0 ? totalCost.toFixed(2) : "—"');
+    expect(app).toContain('Custo total da receita');
+    expect(app).toContain('formatCurrency(numericMoney(r.cost))');
+  });
   it("mantém logo, marca móvel e ilustração industrial com assets estáveis", () => {
     expect(app).toContain('const LOGO = EMBEDDED_LOGO;');
     expect(app).toContain('const MARK = EMBEDDED_MARK;');

@@ -502,3 +502,9 @@
 - [x] Integrar a conclusão da OP à baixa automática da ficha técnica — valida saldo, calcula proporção do lote e registra a saída por ingrediente.
 - [x] Adicionar testes específicos de receitas e baixa de matérias-primas — cobertura de CRUD, produto dinâmico, ingredientes e baixa idempotente.
 - [x] Validar build, responsividade e publicar a versão final — 33 testes, TypeScript, build e estilos responsivos aprovados.
+
+## Custo automático das receitas
+
+- [x] Calcular o custo total a partir do custo unitário cadastrado e da quantidade de cada ingrediente — parser brasileiro aceita valores como `R$ 12,50`.
+- [x] Exibir e persistir o custo total da receita no cadastro e na listagem — resumo no formulário e coluna formatada em BRL.
+- [x] Validar testes, build, responsividade e publicação — 34 testes, TypeScript, build e preview móvel aprovados.

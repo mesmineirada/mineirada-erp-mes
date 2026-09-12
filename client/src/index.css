@@ -750,3 +750,8 @@ html.dark .client-tab.active { border-bottom-color: var(--surface); }
 .setting-row input { flex: 0 0 auto; width: 20px; height: 20px; accent-color: var(--primary); }
 @media (max-width: 640px) { .camera-scanner { align-content: start; padding-top: max(18px, env(safe-area-inset-top)); } .camera-preview { max-height: 55vh; } .camera-guide { width: 78vw; } .setting-row { align-items: flex-start; } }
 @media (prefers-reduced-motion: reduce) { .camera-scanner *, .scanner-form * { animation: none !important; transition: none !important; } }
+
+.recipe-cost-summary { display: grid; gap: .2rem; margin-top: .9rem; padding: .85rem 1rem; border: 1px solid color-mix(in srgb, var(--brand) 40%, var(--line)); border-radius: .75rem; background: color-mix(in srgb, var(--surface) 88%, var(--brand) 12%); }
+.recipe-cost-summary span { color: var(--muted); font-size: .8rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+.recipe-cost-summary strong { color: var(--brand-strong, var(--brand)); font-size: 1.2rem; }
+.recipe-cost-summary small { color: var(--muted); }
