@@ -231,6 +231,22 @@ describe("menu lateral móvel", () => {
     expect(app).toContain('Cadastrar produto acabado');
     expect(app).toContain('empty="Cadastre produtos acabados para acompanhar a Câmara Fria; parâmetros de armazenamento podem ser preenchidos depois."');
   });
+  it("mantém o CRUD de receitas, produto cadastrado e ficha técnica de ingredientes", () => {
+    expect(app).toContain('title="Cadastro de Receitas"');
+    expect(app).toContain('products={data.products}');
+    expect(app).toContain('Adicionar ingrediente');
+    expect(app).toContain('materias-primas-receita');
+    expect(app).toContain('quantidade maior que zero');
+    expect(app).toContain('onEdit={openEdit} onDelete={remove}');
+    expect(app).toContain('Salvar alterações');
+  });
+  it("baixa matérias-primas pela ficha técnica ao concluir uma OP", () => {
+    expect(app).toContain('Array.isArray(recipe.ingredients)');
+    expect(app).toContain('const multiplier = batchSize > 0 ? quantity / batchSize : 1');
+    expect(app).toContain('Baixa automática de matéria-prima pela conclusão da OP');
+    expect(app).toContain('Estoque insuficiente para concluir a OP');
+    expect(app).toContain('MOV-MP-${target.number}-${material.code || material.name}');
+  });
   it("mantém logo, marca móvel e ilustração industrial com assets estáveis", () => {
     expect(app).toContain('const LOGO = EMBEDDED_LOGO;');
     expect(app).toContain('const MARK = EMBEDDED_MARK;');

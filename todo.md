@@ -493,3 +493,12 @@
 ## Correção complementar solicitada pelo usuário
 
 - [x] Incluir a categoria Produto Acabado na última tela de estoque mostrada no vídeo, com listagem, saldo e movimentações integrados.
+
+## Aprimoramento de Cadastro de Receitas — continuação
+
+- [x] Implementar edição e exclusão segura de receitas.
+- [x] Corrigir seleção dinâmica de produtos cadastrados.
+- [x] Adicionar ingredientes e quantidades obrigatórias na ficha técnica.
+- [x] Integrar a conclusão da OP à baixa automática da ficha técnica — valida saldo, calcula proporção do lote e registra a saída por ingrediente.
+- [x] Adicionar testes específicos de receitas e baixa de matérias-primas — cobertura de CRUD, produto dinâmico, ingredientes e baixa idempotente.
+- [x] Validar build, responsividade e publicar a versão final — 33 testes, TypeScript, build e estilos responsivos aprovados.
