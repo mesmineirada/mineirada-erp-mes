@@ -241,8 +241,8 @@ describe("menu lateral móvel", () => {
     expect(app).toContain('Salvar alterações');
   });
   it("baixa matérias-primas pela ficha técnica ao concluir uma OP", () => {
-    expect(app).toContain('Array.isArray(recipe.ingredients)');
-    expect(app).toContain('const multiplier = batchSize > 0 ? quantity / batchSize : 1');
+    expect(app).toContain('recipeRequirements(recipe, quantity)');
+    expect(app).toContain('findMaterialForIngredient');
     expect(app).toContain('Baixa automática de matéria-prima pela conclusão da OP');
     expect(app).toContain('Estoque insuficiente para concluir a OP');
     expect(app).toContain('MOV-MP-${target.number}-${material.code || material.name}');
