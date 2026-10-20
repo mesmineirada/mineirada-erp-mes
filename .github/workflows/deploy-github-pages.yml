@@ -41,6 +41,7 @@ jobs:
       - name: Build static site
         env:
           VITE_BASE_PATH: /${{ github.event.repository.name }}/
+          VITE_STATIC_DEPLOY: "true"
         run: |
           pnpm check
           pnpm build

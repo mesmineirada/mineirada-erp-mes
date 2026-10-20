@@ -264,4 +264,8 @@ describe("menu lateral móvel", () => {
     expect(css).toContain('.mobile-topbar-mark { display: none;');
     expect(css).not.toContain('.login-illustration { display: block;');
   });
+  it("mantém login navegável quando publicado como site estático", () => {
+    expect(app).toContain('import.meta.env.VITE_STATIC_DEPLOY === "true"');
+    expect(app).toContain('AUTH_USERS.find((account) => account.username === normalizedUsername && account.password === password)');
+  });
 });
