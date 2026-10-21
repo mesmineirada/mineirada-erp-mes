@@ -7,7 +7,7 @@ import { sdk } from "./_core/sdk";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 
-const managerProcedure = protectedProcedure.use(({ ctx, next }) => { const profile = String(ctx.user?.profile || "").toLowerCase(); if (!['gestor', 'gerente'].includes(profile)) throw new TRPCError({ code: "FORBIDDEN", message: "A autorização de OP é exclusiva para usuários com cargo de gerência." }); return next(); });
+const managerProcedure = protectedProcedure.use(({ ctx, next }) => { const profile = String(ctx.user?.profile || "").trim().toLowerCase(); if (!['gestor', 'gerente', 'admin'].includes(profile)) throw new TRPCError({ code: "FORBIDDEN", message: "A autorização de OP é exclusiva para perfis de gestão ou administração." }); return next(); });
 
 export const appRouter = router({
     // if you need to use socket.io, read and register route in server/_core/index.ts, all api should start with '/api/' so that the gateway can route correctly

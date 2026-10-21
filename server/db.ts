@@ -1,5 +1,4 @@
 import { eq } from "drizzle-orm";
-import { randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 import { drizzle } from "drizzle-orm/mysql2";
 import { InsertUser, packagingItems, products, productionEntries, productionOrders as normalizedProductionOrders, rawMaterials, stockMovements, users, warehouseRequisitions, workspaceState } from "../drizzle/schema";
 import { ENV } from './_core/env';
@@ -78,26 +77,9 @@ export async function upsertUser(user: InsertUser): Promise<void> {
   }
 }
 
-function hashPassword(password: string, salt = randomBytes(16).toString("hex")) { return `scrypt$${salt}$${scryptSync(password, salt, 64).toString("hex")}`; }
-function verifyPassword(password: string, stored: string) { const [, salt, digest] = stored.split("$"); if (!salt || !digest) return false; const actual = scryptSync(password, salt, 64); const expected = Buffer.from(digest, "hex"); return actual.length === expected.length && timingSafeEqual(actual, expected); }
-
-const LEGACY_ACCOUNTS = [
-  { username: "SOUSA", name: "Sousa", profile: "gestor", password: "RGMS1234" },
-  { username: "KARITA", name: "Karita", profile: "admin", password: "12345678" },
-  { username: "FELIPE", name: "Felipe", profile: "admin", password: "12345678" },
-] as const;
-
-export async function loginWithCredentials(username: string, password: string) {
-  const db = await getDb(); if (!db) return null;
-  const normalized = username.trim().toUpperCase(); const account = LEGACY_ACCOUNTS.find((candidate) => candidate.username === normalized); if (!account || !password) return null;
-  const existing = await db.select().from(users).where(eq(users.username, normalized)).limit(1);
-  let user = existing[0];
-  if (!user) { const inserted = await db.insert(users).values({ openId: `legacy:${normalized}`, username: normalized, passwordHash: hashPassword(account.password), profile: account.profile, name: account.name, loginMethod: "credentials", role: "admin" }).$returningId(); const id = inserted[0]?.id; if (!id) return null; const created = await db.select().from(users).where(eq(users.id, id)).limit(1); user = created[0]; }
-  if (!user) return null;
-  if (user.profile !== account.profile || user.role !== "admin" || !user.passwordHash) { const passwordHash = user.passwordHash || hashPassword(account.password); await db.update(users).set({ profile: account.profile, role: "admin", passwordHash, loginMethod: "credentials", name: account.name }).where(eq(users.id, user.id)); user = { ...user, profile: account.profile, role: "admin", passwordHash, loginMethod: "credentials", name: account.name }; }
-  if (!user.passwordHash || !verifyPassword(password, user.passwordHash)) return null;
-  await db.update(users).set({ lastSignedIn: new Date() }).where(eq(users.id, user.id));
-  return user;
+/** As contas demonstrativas antigas foram removidas. A autenticação agora é feita pelo Supabase Auth. */
+export async function loginWithCredentials(_username: string, _password: string): Promise<{ openId: string; name: string | null; username: string | null; profile: string | null; role: string | null } | null> {
+  return null;
 }
 
 export async function getUserByOpenId(openId: string) {
@@ -180,4 +162,3 @@ export async function saveWorkspaceState(state: string, updatedBy: string, versi
   try { await syncNormalizedWorkspace(JSON.parse(state)); } catch (error) { console.error("[Database] Normalized sync failed; workspace JSON preserved", error); }
   return { version: nextVersion, updatedBy };
 }
-

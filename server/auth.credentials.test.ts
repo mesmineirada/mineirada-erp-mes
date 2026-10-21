@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import { appRouter } from "./routers";
-import { sdk } from "./_core/sdk";
 import type { TrpcContext } from "./_core/context";
 
 const context = { user: null, req: {} as TrpcContext["req"], res: { cookie: () => undefined } as unknown as TrpcContext["res"] } satisfies TrpcContext;
@@ -11,20 +10,15 @@ describe("autenticação server-side e catálogo", () => {
     await expect(caller.auth.login({ username: "SOUSA", password: "" })).rejects.toMatchObject({ code: "BAD_REQUEST" });
   });
 
-  it("mantém tokens de sessão independentes por usuário", async () => {
-    const sousa = await sdk.createSessionToken("legacy:SOUSA", { name: "Sousa" });
-    const karita = await sdk.createSessionToken("legacy:KARITA", { name: "Karita" });
-    const decodedSousa = await sdk.verifySession(sousa);
-    const decodedKarita = await sdk.verifySession(karita);
-    expect(decodedSousa?.openId).toBe("legacy:SOUSA");
-    expect(decodedKarita?.openId).toBe("legacy:KARITA");
-    expect(decodedSousa?.openId).not.toBe(decodedKarita?.openId);
+  it("rejeita as contas demonstrativas removidas sem criar sessão", async () => {
+    const caller = appRouter.createCaller(context);
+    await expect(caller.auth.login({ username: "SOUSA", password: "senha-antiga" })).rejects.toMatchObject({ code: "UNAUTHORIZED" });
   });
 
-  it("bloqueia autorização de OP para perfil administrador", async () => {
+  it("permite que administrador passe pela regra gerencial de autorização de OP", async () => {
     const adminContext = { ...context, user: { id: 2, openId: "legacy:KARITA", profile: "admin", role: "admin", name: "Karita" } as TrpcContext["user"] };
     const caller = appRouter.createCaller(adminContext);
-    await expect(caller.production.authorize({ number: "OP-NAO-AUTORIZAR" })).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(caller.production.authorize({ number: "" })).rejects.toMatchObject({ code: "BAD_REQUEST" });
   });
 
   it("mantém a validação do endpoint gerencial para entrada inválida", async () => {
