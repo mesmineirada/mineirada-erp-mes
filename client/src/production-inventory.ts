@@ -12,14 +12,23 @@ export function normalizeInventoryKey(value: unknown) {
 }
 
 export function findRecipeForProduct(recipes: InventoryRecipe[], product: unknown) {
-  const target = normalizeInventoryKey(product);
-  if (!target) return undefined;
+  const target = new Set((Array.isArray(product) ? product : [product]).map(normalizeInventoryKey).filter(Boolean));
+  if (!target.size) return undefined;
   return recipes.find((recipe) =>
     [recipe.product, recipe.productCode, recipe.productName]
       .map(normalizeInventoryKey)
       .filter(Boolean)
-      .includes(target),
+      .some((key) => target.has(key)),
   );
+}
+
+export function findRecipeForProductionOrder(recipes: InventoryRecipe[], product: unknown, recipeCode?: unknown) {
+  const explicitCode = normalizeInventoryKey(recipeCode);
+  if (explicitCode) {
+    const explicitRecipe = recipes.find((recipe) => normalizeInventoryKey(recipe.code || recipe.name) === explicitCode);
+    if (explicitRecipe && findRecipeForProduct([explicitRecipe], product)) return explicitRecipe;
+  }
+  return findRecipeForProduct(recipes, product);
 }
 
 export function findMaterialForIngredient(materials: InventoryMaterial[], ingredient: RecipeIngredient) {

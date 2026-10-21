@@ -75,7 +75,8 @@ describe("menu lateral móvel", () => {
     expect(app).toContain('setShowSplash(true)');
     expect(app).toContain('setTimeout(() => setShowSplash(false), 2000)');
     expect(app).toContain('className="welcome-splash"');
-    expect(app).toContain('localStorage.setItem("mineirada_user_profile", JSON.stringify(next))');
+    expect(app).toContain("await supabase.auth.updateUser");
+    expect(app).toContain("authUserFromSupabase(data.user)");
     expect(css).toContain('.welcome-splash');
     expect(css).toContain('welcome-splash-out 2s');
   });
@@ -96,10 +97,11 @@ describe("menu lateral móvel", () => {
     expect(app).toContain('main-scroll-locked');
   });
 
-  it("mantém o atalho de autorização restrito ao perfil gerencial", () => {
+  it("mostra o atalho de autorização a gestores, gerentes e administradores", () => {
     expect(app).toContain('href: "/producao/ordens?view=autorizar"');
     expect(app).toContain("managerOnly: true");
     expect(app).toContain('user.role === "gerente"');
+    expect(app).toContain('user.role === "admin"');
     expect(app).toContain('authorizationView');
   });
 
@@ -173,9 +175,9 @@ describe("menu lateral móvel", () => {
   it("oferece rastreabilidade pública por QR sem login e mostra a etapa atual", () => {
     expect(app).toContain('location.match(/^\\/consulta-pedido\\/(.+)$/)');
     expect(app).toContain('Nome (opcional)');
-    expect(app).toContain('getProductionProgress');
+    expect(app).toContain('supabase.rpc("public_lookup_order"');
     expect(app).toContain('Etapa atual');
-    expect(app).toContain('Produto acabado encaminhado para a Câmara Fria.');
+    expect(app).toContain('visibility.showLocation');
     expect(app).toContain('Último apontamento:');
   });
 
@@ -264,8 +266,10 @@ describe("menu lateral móvel", () => {
     expect(css).toContain('.mobile-topbar-mark { display: none;');
     expect(css).not.toContain('.login-illustration { display: block;');
   });
-  it("mantém login navegável quando publicado como site estático", () => {
-    expect(app).toContain('import.meta.env.VITE_STATIC_DEPLOY === "true"');
-    expect(app).toContain('AUTH_USERS.find((account) => account.username === normalizedUsername && account.password === password)');
+  it("usa Supabase Auth em vez de autenticação estática no site publicado", () => {
+    expect(app).toContain("supabase.auth.signInWithPassword");
+    expect(app).toContain("supabase.auth.onAuthStateChange");
+    expect(app).not.toContain("AUTH_USERS");
+    expect(app).not.toContain("previewMode");
   });
 });
