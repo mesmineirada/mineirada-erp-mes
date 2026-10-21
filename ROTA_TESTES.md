@@ -1,23 +1,11 @@
 # Testes de rotas e lógica
 
-A rota `/cadastros/clientes?preview=1` carregou corretamente no preview autenticado. O menu lateral exibiu os módulos e o botão **Novo** abriu o modal de cadastro sem erro de renderização.
+Os registros abaixo descrevem verificações anteriores da interface e não comprovam conexão com Supabase. O parâmetro `?preview=1` não concede mais sessão privilegiada; o login de produção requer uma conta criada no Supabase Auth.
 
-Durante a inspeção foi identificado e corrigido um problema de validação: o formulário genérico permitia salvar cadastro sem preencher os campos obrigatórios. A rotina agora bloqueia a gravação e exibe uma notificação global.
+A revisão responsiva anterior cobriu larguras de 1280px, 768px, 390px e 375px. O menu móvel, a topbar, formulários e modais foram verificados visualmente. A cobertura detalhada de rotas está em [`MAPEAMENTO_ORIGINAL.md`](./MAPEAMENTO_ORIGINAL.md).
 
-Também foi validado que os links do menu possuem cobertura no roteador: 49 rotas declaradas e 49 tratadas.
+## Verificações da integração Supabase
 
-A compilação TypeScript e o build de produção foram executados com código de saída 0 após as correções.
+Execute `pnpm check`, `pnpm test` e `pnpm build` depois de configurar `.env.local`. A migration SQL deve ser executada no projeto Supabase, e o deploy do GitHub Pages depende das variáveis `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY` configuradas no repositório. Sem essas etapas, um build local não comprova persistência compartilhada entre contas.
 
-## Nova validação dos módulos pendentes
-
-A rota `/producao/ordens?preview=1` carregou com estado vazio, filtros e contador. O botão **Nova OP** abriu o modal com número de OP, produto, quantidade, entrega, prioridade, status e observações. A ação de salvar valida produto e quantidade maior que zero.
-
-Os módulos de fluxo, movimentações, checklists, não conformidades, manutenção e auditoria foram conectados ao roteador e deixaram de usar `PlaceholderPage`. Os estados iniciais continuam vazios e os registros criados localmente alimentam os indicadores e o histórico de auditoria.
-
-A validação manual também confirmou que o formulário aceita produto e quantidade positiva sem erros de renderização. O fluxo está pronto para testar o salvamento e a persistência local.
-
-O teste manual criou uma ordem local com sucesso: a tabela passou de 0 para 1 ordem e exibiu a OP, produto, quantidade, prioridade e status. O feedback de sucesso apareceu no preview e o estado foi persistido no navegador.
-
-## Revisão responsiva
-
-As telas críticas foram capturadas em 1280px, 768px, 390px e 375px. Em dispositivos móveis, a sidebar transforma-se em menu lateral, a topbar reduz o conteúdo, os botões ocupam a largura disponível, os filtros empilham, os modais respeitam a altura da viewport e os estados vazios não exibem mais cabeçalhos horizontais recortados. O cadastro de clientes foi aberto manualmente e o modal apresentou campos e ações sem overflow no preview.
+A tela usa Postgres/RLS e deve ser verificada com pelo menos duas contas autorizadas: criar um registro com a primeira conta, aguardar a sincronização e confirmar sua aparição na segunda; testar simultaneamente uma alteração concorrente e confirmar que conflito não substitui silenciosamente o estado mais novo.

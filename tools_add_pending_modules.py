@@ -15,7 +15,7 @@ text = text.replace('''  lots: [] as Array<{ lot: string; material: string; tota
 
 modules = r'''
 function auditEvent(module: string, action: string, detail: string): AuditEvent {
-  let user = "SOUSA"; try { const stored = JSON.parse(localStorage.getItem("mineirada_user_profile") || "null"); user = stored?.username || user; } catch { /* usar usuário padrão de validação */ }
+  let user = "Usuário"; try { const stored = JSON.parse(localStorage.getItem("mineirada_user_profile") || "null"); user = stored?.username || user; } catch { /* usar usuário padrão de validação */ }
   return { id: `AUD-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, module, action, user, date: new Date().toLocaleString("pt-BR"), detail };
 }
 
