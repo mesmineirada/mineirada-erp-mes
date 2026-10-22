@@ -39,8 +39,8 @@ jobs:
       - name: Build static site
         env:
           VITE_BASE_PATH: /${{ github.event.repository.name }}/
-          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
+          VITE_SUPABASE_URL: https://tcgmsdsvfyqqnepiajsy.supabase.co
+          VITE_SUPABASE_ANON_KEY: sb_publishable_frG977l7AyF2V8ZALTDhgQ_ZXREh67w
         run: |
           if [ -z "$VITE_SUPABASE_URL" ] || [ -z "$VITE_SUPABASE_ANON_KEY" ]; then
             echo "::error::Configure os Repository Variables VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY antes do deploy."
