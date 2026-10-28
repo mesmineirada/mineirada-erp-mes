@@ -9,6 +9,7 @@ import { useTheme } from "./contexts/ThemeContext";
 import { EMBEDDED_LOGO, EMBEDDED_MARK } from "./brandAssets";
 import { findMaterialForIngredient, findRecipeForProduct, normalizeInventoryKey, recipeRequirements } from "./production-inventory";
 import { TECHNICAL_GLOSSARY, visibleFieldLabels, type TechnicalTerm } from "./localization";
+import ManualPage from "./ManualPage";
 import QRCode from "qrcode";
 import jsQR from "jsqr";
 import * as XLSX from "xlsx";
@@ -82,7 +83,6 @@ import {
 
 const LOGO = EMBEDDED_LOGO;
 const MARK = EMBEDDED_MARK;
-const MANUAL_ART = EMBEDDED_LOGO;
 const MONITOR_ART = "/manus-storage/mineirada-monitor-illustration_738fae73.png";
 const OPERATOR_ART = "/manus-storage/mineirada-operator_c6faac08.png";
 type Role = "gestor" | "admin" | "gerente" | "operador" | "qualidade" | "manutencao" | "user";
@@ -543,8 +543,6 @@ function RastreabilidadePage({ data }: { data: typeof initialData }) {
 }
 function ReportsPage({ data }: { data: typeof initialData }) { const [start, setStart] = useState("2026-08-01"); const [end, setEnd] = useState("2026-08-25"); const { showToast } = useToast(); const reports: Array<[string, string, LucideIcon]> = [["Produção por período", "Ordens produzidas, kg planejados e realizados", Factory], ["Pedidos e faturamento", "Pedidos, valores e situação comercialis", ClipboardList], ["Estoque e lotes", "Saldos, validade e movimentações", Boxes], ["Custos de produção", "Custos por OP, produto e etapa", CircleDollarSign], ["Qualidade", "Checklists, NCs e liberações", ShieldCheck], ["Manutenção", "Ordens, custos e disponibilidade", Wrench]] as const; const exportReport = (title: string) => { const rows = title.startsWith("Pedidos") ? data.orders.map((item) => [item.number, item.client, item.delivery, item.priority, item.total, item.status]) : title.startsWith("Produção") ? data.productionOrders.map((item) => [item.number, item.product, item.quantity, item.delivery, item.priority, item.status]) : title.startsWith("Estoque") ? data.movements.map((item) => [item.date, item.type, item.item, item.quantity, item.unit, item.origin, item.destination]) : title === "Qualidade" ? data.qualityRecords.map((item) => [item.id, item.category, item.subject, item.status, item.responsible, item.date]) : title === "Manutenção" ? data.maintenanceOrders.map((item) => [item.id, item.asset, item.type, item.priority, item.status, item.date]) : data.productionEntries.map((item) => [item.date, item.sector, item.orderNumber, item.received, item.sent, item.loss, item.temperature]); downloadCsv(`mineirada-${title.toLowerCase().replaceAll(" ", "-")}.csv`, ["Data/ID", "Item", "Descrição", "Quantidade/Status", "Campo 5", "Campo 6", "Campo 7"], rows); showToast("CSV exportado com os dados atuais."); }; return <div className="page-content"><PageHeader title="Relatórios" description="Exportação de relatórios com dados do sistema" /><div className="date-filter"><Field label="Data Início"><TextInput type="date" value={start} onChange={setStart} /></Field><Field label="Data Fim"><TextInput type="date" value={end} onChange={setEnd} /></Field><span>Filtro de período aplicado aos relatórios com data</span></div><div className="report-grid">{reports.map(([title, desc, Icon]) => <div className="panel report-card" key={title}><span className="report-icon"><Icon size={20} /></span><div><h3>{title}</h3><p>{desc}</p><div className="report-actions"><Button variant="outline" icon={Download} onClick={() => exportReport(title)}>CSV</Button><Button variant="outline" icon={FileText} onClick={() => showToast("O formato Excel está disponível a partir do CSV gerado.")}>Excel</Button><Button variant="outline" icon={Download} onClick={() => showToast("Use CSV para exportar os dados operacionais.")}>PDF</Button></div></div></div>)}</div></div>; }
 
-function ManualPage() { const [, navigate] = useLocation(); const steps: Array<[string, string, string]> = [["Comece pelos cadastros", "Cadastre clientes, fornecedores, matérias-primas, produtos, máquinas e embalagens.", "/cadastros/materias-primas"], ["Planeje a produção", "Crie a receita/BOM, o pedido e a ordem de produção com lote e prioridade.", "/engenharia/receitas"], ["Execute e aponte", "Autorize a requisição, separe MP e registre pesos, temperatura e perdas em cada setor.", "/producao/ordens"], ["Feche o ciclo", "Libere a qualidade, atualize a câmara fria, acompanhe expedição e gere relatórios.", "/estoque/acabado"]]; return <div className="page-content"><PageHeader title="Manual de uso" description="Rotinas e orientações do Mineirada ERP + MES" /><div className="manual-hero"><img src={MANUAL_ART} alt="Linha de produção" /><div><span className="eyebrow">Operação integrada</span><h2>Do pedido à expedição, cada etapa no seu lugar.</h2><p>Consulte os passos para cadastrar insumos, liberar OPs, apontar produção e rastrear lotes.</p></div></div><div className="manual-grid">{steps.map(([title, text, href], i) => <div className="panel manual-step" key={title}><span>{String(i + 1).padStart(2, "0")}</span><h3>{title}</h3><p>{text}</p><button className="text-link" onClick={() => navigate(href)}>Ver orientações <ArrowRight size={14} /></button></div>)}</div></div>; }
-
 function OperatorPage({ data }: { data: typeof initialData }) {
   const [offline, setOffline] = useState(false); const [, navigate] = useLocation(); const firstOrder = data.orders[0];
   return <div className="page-content operator-page"><PageHeader title="App do Operador" description="Apontamento de chão de fábrica, otimizado para celular e modo offline"><Button variant={offline ? "danger" : "outline"} icon={offline ? Activity : RefreshCw} onClick={() => setOffline(!offline)}>{offline ? "Modo offline" : "Sincronizar"}</Button></PageHeader><div className="operator-hero"><div><span className="eyebrow">Experiência mobile</span><h2>Registre no setor, mesmo sem sinal.</h2><p>Selecione ou escaneie uma ordem cadastrada, acompanhe o cronômetro e envie pesos, temperatura, foto e assinatura digital.</p><div className="operator-badges"><Pill tone={offline ? "warning" : "neutral"}>{offline ? "Modo offline" : "Pronto"}</Pill><Pill tone="neutral">{data.orders.length} ordens disponíveis</Pill></div></div><img src={OPERATOR_ART} alt="Operador com scanner" /></div><div className="operator-grid"><div className="panel"><div className="panel-head"><h3>Selecionar Ordem de Produção</h3><Button variant="outline" icon={QrCode}>Escanear</Button></div>{firstOrder ? <SelectInput><option>{firstOrder.number} · {firstOrder.client || "Cliente não informado"}</option>{data.orders.slice(1).map((order) => <option key={order.number}>{order.number} · {order.client || "Cliente não informado"}</option>)}</SelectInput> : <div className="empty-state compact-empty"><ClipboardList size={28} /><p>Nenhuma ordem cadastrada.</p><Button variant="outline" onClick={() => navigate("/pedidos")}>Ir para pedidos</Button></div>}</div><div className="panel signature-card"><div className="panel-head"><h3>Assinatura digital</h3><Pencil size={17} /></div><div className="signature-box"><span>Assine aqui após conferir o registro</span></div><Button variant="outline" icon={Camera}>Adicionar foto</Button></div></div></div>;
@@ -773,9 +771,9 @@ function PlaceholderPage({ title, description, construction = false }: { title: 
 }
 
 function AuthenticatedRouter({ user, onLogout, onProfileSave }: { user: AuthUser; onLogout: () => void; onProfileSave: (profile: Partial<AuthUser>) => void }) {
-  const [location] = useLocation(); const [data, setData] = usePersistedData(); const common = { data, setData } as const; let content: ReactNode;
+  const [location] = useLocation(); const route = location.split(/[?#]/, 1)[0].replace(/\/+$/, "") || "/"; const [data, setData] = usePersistedData(); const common = { data, setData } as const; let content: ReactNode;
   if (location === "/") content = <Dashboard data={data} />;
-  else if (location === "/manual") content = <ManualPage />;
+  else if (route === "/manual" || route.startsWith("/manual/")) content = <ManualPage />;
   else if (location === "/perfil") content = <ProfileSettingsPage user={user} onSave={onProfileSave} />;
   else if (location === "/pedidos") content = <OrdersPage {...common} />;
   else if (location === "/estoque") content = <InventoryOverview data={data} />;
@@ -828,6 +826,8 @@ function AuthenticatedRouter({ user, onLogout, onProfileSave }: { user: AuthUser
 
 export default function App() {
   const [location, navigate] = useLocation(); const previewMode = new URLSearchParams(window.location.search).get("preview") === "1";
+  const routePath = location.split(/[?#]/, 1)[0].replace(/\/+$/, "") || "/";
+  const nextPath = (() => { const candidate = new URLSearchParams(window.location.search).get("next"); return candidate?.startsWith("/") && !candidate.startsWith("//") ? candidate : null; })();
   const [showSplash, setShowSplash] = useState(false);
   const [user, setUser] = useState<AuthUser | null>(() => {
     try {
@@ -835,14 +835,14 @@ export default function App() {
       return account ? { username: account.username, name: account.name, role: account.role } : previewMode ? { username: "SOUSA", name: "Sousa", role: "gestor" } : null;
     } catch { return previewMode ? { username: "SOUSA", name: "Sousa", role: "gestor" } : null; }
   });
-  useEffect(() => { if (user && location === "/login") navigate("/"); }, [user, location, navigate]);
+  useEffect(() => { if (user && routePath === "/login") navigate(nextPath || "/"); }, [user, routePath, nextPath, navigate]);
   useEffect(() => { if (!showSplash) return; const timer = window.setTimeout(() => setShowSplash(false), 2000); return () => window.clearTimeout(timer); }, [showSplash]);
-  const login = (account: AuthUser) => { setUser(account); setShowSplash(true); localStorage.setItem("mineirada_session_v1", "server-session"); localStorage.setItem("mineirada_user_profile", JSON.stringify(account)); navigate("/"); };
+  const login = (account: AuthUser) => { setUser(account); setShowSplash(true); localStorage.setItem("mineirada_session_v1", "server-session"); localStorage.setItem("mineirada_user_profile", JSON.stringify(account)); navigate(nextPath || (routePath === "/login" ? "/" : location || "/")); };
   const saveProfile = (profile: Partial<AuthUser>) => { setUser((current) => { if (!current) return current; const next = { ...current, ...profile }; localStorage.setItem("mineirada_user_profile", JSON.stringify(next)); return next; }); };
   const logout = () => { localStorage.removeItem("mineirada_session_v1"); localStorage.removeItem("mineirada_user_profile"); setUser(null); navigate("/login"); };
-  if (!user && location !== "/consulta-pedido" && !location.startsWith("/consulta-pedido/")) return <LoginPage onLogin={login} />;
-  if (user && location === "/login") return null;
-  if (location === "/consulta-pedido" || location.startsWith("/consulta-pedido/")) return <div className="public-page"><div className="public-page-head"><img className="brand-logo-full" src={LOGO} alt="Mineirada" /><h1>ERP + MES</h1><p>Acompanhamento público de pedido</p></div><PublicLookup /><button className="back-login" onClick={() => navigate("/login")}><ArrowLeft size={15} /> Voltar para o acesso</button></div>;
+  if (!user && routePath !== "/consulta-pedido" && !routePath.startsWith("/consulta-pedido/")) return <LoginPage onLogin={login} />;
+  if (user && routePath === "/login") return null;
+  if (routePath === "/consulta-pedido" || routePath.startsWith("/consulta-pedido/")) return <div className="public-page"><div className="public-page-head"><img className="brand-logo-full" src={LOGO} alt="Mineirada" /><h1>ERP + MES</h1><p>Acompanhamento público de pedido</p></div><PublicLookup /><button className="back-login" onClick={() => navigate("/login")}><ArrowLeft size={15} /> Voltar para o acesso</button></div>;
   const authenticatedUser = user || { username: "SOUSA", name: "Sousa", role: "gestor" };
   return <>{showSplash && <WelcomeSplash user={authenticatedUser} />}<AuthenticatedRouter user={authenticatedUser} onLogout={logout} onProfileSave={saveProfile} /></>;
 }

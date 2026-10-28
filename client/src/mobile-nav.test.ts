@@ -5,6 +5,7 @@ import { resolve } from "node:path";
 describe("menu lateral móvel", () => {
   const app = readFileSync(resolve(process.cwd(), "client/src/App.tsx"), "utf8");
   const css = readFileSync(resolve(process.cwd(), "client/src/index.css"), "utf8");
+  const manual = readFileSync(resolve(process.cwd(), "client/src/ManualPage.tsx"), "utf8");
   const localization = readFileSync(resolve(process.cwd(), "client/src/localization.ts"), "utf8");
   const indexHtml = readFileSync(resolve(process.cwd(), "client/index.html"), "utf8");
 
@@ -255,14 +256,21 @@ describe("menu lateral móvel", () => {
     expect(app).toContain('Custo total da receita');
     expect(app).toContain('formatCurrency(numericMoney(r.cost))');
   });
-  it("mantém logo, marca móvel e ilustração industrial com assets estáveis", () => {
+  it("mantém a marca móvel e os artigos do manual em componente próprio", () => {
     expect(app).toContain('const LOGO = EMBEDDED_LOGO;');
     expect(app).toContain('const MARK = EMBEDDED_MARK;');
     expect(app).toContain('className="mobile-topbar-mark"');
     expect(app).not.toContain('className="login-illustration"');
-    expect(app).toContain('src={MANUAL_ART}');
+    expect(manual).toContain("Manual de uso do Mineirada ERP + MES");
+    expect(manual).toContain('navigate(`/manual/${item.slug}`)');
+    expect(css).toContain(".manual-detail-step");
     expect(css).toContain('.mobile-topbar-mark { display: none;');
     expect(css).not.toContain('.login-illustration { display: block;');
+  });
+  it("mantém o manual protegido e retorna ao caminho solicitado após o login", () => {
+    expect(app).toContain('else if (route === "/manual" || route.startsWith("/manual/")) content = <ManualPage />;');
+    expect(app).toContain('if (!user && routePath !== "/consulta-pedido"');
+    expect(app).toContain('navigate(nextPath || (routePath === "/login" ? "/" : location || "/"));');
   });
   it("mantém login navegável quando publicado como site estático", () => {
     expect(app).toContain('import.meta.env.VITE_STATIC_DEPLOY === "true"');
