@@ -272,12 +272,14 @@ describe("menu lateral móvel", () => {
     expect(app).toContain('if (!user && routePath !== "/consulta-pedido"');
     expect(app).toContain('navigate(nextPath || (routePath === "/login" ? "/" : location || "/"));');
   });
-  it("exporta o backup sem exigir senha e mantém senha na restauração", () => {
+  it("exporta e restaura o backup JSON com senha opcional somente na exportação", () => {
     expect(app).toContain('const exportBackup = () => { if (requireExportPassword &&');
     expect(app).toContain('checked={requireExportPassword}');
     expect(app).toContain('Exigir senha também para exportar');
-    expect(app).toContain('if (!file || password.length < 12 || password !== confirm)');
-    expect(app).toContain('Senha de restauração e opção de exportação');
+    expect(app).toContain('if (!file) { window.alert("Selecione um arquivo JSON de backup para restaurar."); return; }');
+    expect(app).toContain('Restaurar backup JSON');
+    expect(app).toContain('Senha opcional para exportação');
+    expect(app).not.toContain('password.length < 12 || password !== confirm) { window.alert("Escolha um arquivo');
   });
   it("mantém login navegável quando publicado como site estático", () => {
     expect(app).toContain('import.meta.env.VITE_STATIC_DEPLOY === "true"');
