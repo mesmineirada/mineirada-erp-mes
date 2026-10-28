@@ -323,7 +323,7 @@ const guides: ManualGuide[] = [
       {
         title: "Faça backup antes de trocar de navegador",
         paragraphs: [
-          "Em Administração > Dados e Backup, informe e confirme uma senha com pelo menos 12 caracteres e exporte o arquivo JSON. Para restaurar, selecione o arquivo de backup e informe a mesma senha no formulário.",
+          "Em Administração > Dados e Backup, exporte o arquivo JSON diretamente ou marque “Exigir senha também para exportar” para solicitar uma senha com pelo menos 12 caracteres. Para restaurar, selecione o arquivo de backup e informe e confirme a senha de proteção.",
           "O arquivo inclui os registros locais e anexos; guarde-o em local controlado e confira a instalação antes de restaurar, pois a restauração substitui os dados locais atuais.",
         ],
         note: "A senha solicitada pela tela não cifra o conteúdo do JSON nesta versão. Não envie backups por canais públicos e não inclua dados pessoais ou empresariais reais.",
