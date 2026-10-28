@@ -307,7 +307,7 @@ function usePersistedData(user: AuthUser) {
         /* Manter o cache local durante falhas temporárias de rede. */
       }
     };
-    const timer = window.setInterval(() => void synchronize(), 5000);
+    const timer = window.setInterval(() => void synchronize(), 20_000);
     return () => { active = false; window.clearInterval(timer); };
   }, [applyRemote, user.username]);
 

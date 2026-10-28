@@ -269,6 +269,7 @@ describe("menu lateral móvel", () => {
   it("usa Supabase Auth em vez de autenticação estática no site publicado", () => {
     expect(app).toContain("supabase.auth.signInWithPassword");
     expect(app).toContain("supabase.auth.onAuthStateChange");
+    expect(app).toContain("window.setInterval(() => void synchronize(), 20_000)");
     expect(app).not.toContain("AUTH_USERS");
     expect(app).not.toContain("previewMode");
   });
