@@ -809,6 +809,10 @@ html.dark .client-tab.active { border-bottom-color: var(--surface); }
 .manual-open-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
 .manual-open-button { min-height: 34px; padding: 7px 10px; font-size: 12px; }
 .manual-open-button svg { margin-left: 2px; }
+.manual-illustration-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: 13px; margin: 0 0 16px; }
+.manual-illustration { min-width: 0; margin: 0; overflow: hidden; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow); }
+.manual-illustration img { display: block; width: 100%; height: auto; }
+.manual-illustration figcaption { padding: 10px 13px; color: var(--muted); font-size: 12px; line-height: 1.5; }
 .manual-detail-footer { display: flex; justify-content: flex-start; margin-top: 17px; }
 .manual-not-found { display: flex; flex-direction: column; align-items: flex-start; gap: 9px; padding: 24px; }
 .manual-not-found > svg { color: var(--primary); }
@@ -823,6 +827,7 @@ html.dark .client-tab.active { border-bottom-color: var(--surface); }
   .manual-page-heading h1 { font-size: 24px; }
   .manual-page-heading p { font-size: 13px; }
   .manual-intro, .manual-flow { padding: 15px; }
+  .manual-illustration-grid { grid-template-columns: 1fr; }
   .manual-guide-grid { grid-template-columns: 1fr; }
   .manual-guide-card { min-height: 110px; padding: 16px; }
   .manual-flow-list { grid-template-columns: 1fr; }

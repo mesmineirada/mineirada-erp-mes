@@ -16,6 +16,13 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
+import manualCadastrosImage from "./manual-cadastros.png";
+import manualReceitasImage from "./manual-receitas.png";
+import manualApontamentosImage from "./manual-apontamentos.png";
+import manualMovimentacoesImage from "./manual-movimentacoes.png";
+import manualChecklistsImage from "./manual-checklists.png";
+import manualRelatoriosImage from "./manual-relatorios.png";
+
 type ManualAction = { label: string; href: string };
 type ManualStep = {
   title: string;
@@ -23,11 +30,13 @@ type ManualStep = {
   note?: string;
   actions?: ManualAction[];
 };
+type ManualIllustration = { src: string; alt: string; caption: string };
 type ManualGuide = {
   slug: string;
   title: string;
   summary: string;
   icon: LucideIcon;
+  illustrations: ManualIllustration[];
   steps: ManualStep[];
 };
 
@@ -37,6 +46,13 @@ const guides: ManualGuide[] = [
     title: "Cadastros essenciais",
     summary: "Prepare os dados que serão reutilizados em pedidos, receitas, estoque e produção.",
     icon: Users,
+    illustrations: [
+      {
+        src: manualCadastrosImage,
+        alt: "Tela de matérias-primas com uma seta indicando o botão Novo.",
+        caption: "A seta aponta para Novo. Use a busca para localizar um item; pelo formulário, informe os dados necessários e salve.",
+      },
+    ],
     steps: [
       {
         title: "Cadastre clientes e fornecedores",
@@ -86,6 +102,13 @@ const guides: ManualGuide[] = [
     title: "Receitas, pedidos e ordens de produção",
     summary: "Monte a ficha técnica, registre a demanda do cliente e transforme-a em uma ordem controlada.",
     icon: ClipboardList,
+    illustrations: [
+      {
+        src: manualReceitasImage,
+        alt: "Tela de receitas com uma seta indicando o botão Nova Receita.",
+        caption: "A seta destaca Nova Receita. Selecione um produto já cadastrado, inclua os ingredientes e informe as quantidades por lote.",
+      },
+    ],
     steps: [
       {
         title: "Monte a receita / ficha técnica",
@@ -131,6 +154,13 @@ const guides: ManualGuide[] = [
     title: "Apontamentos por setor",
     summary: "Registre quantidades e condições de cada etapa para acompanhar o andamento da fábrica.",
     icon: Factory,
+    illustrations: [
+      {
+        src: manualApontamentosImage,
+        alt: "Tela do setor Cozinha sem ordens disponíveis, com uma seta para o atalho de ordens de produção.",
+        caption: "A tela está sem OP disponível. A seta aponta para o atalho que leva às Ordens de Produção; depois de criar ou liberar uma OP, volte ao setor e faça o apontamento.",
+      },
+    ],
     steps: [
       {
         title: "Abra a etapa correta e selecione uma OP",
@@ -174,6 +204,13 @@ const guides: ManualGuide[] = [
     title: "Estoque, requisições e lotes",
     summary: "Consulte saldos, registre movimentações e acompanhe a validade e a localização dos lotes.",
     icon: Boxes,
+    illustrations: [
+      {
+        src: manualMovimentacoesImage,
+        alt: "Tela de movimentações de estoque com uma seta para Nova Movimentação.",
+        caption: "Use Nova Movimentação para registrar entradas, saídas, transferências ou ajustes. Os filtros e a tabela ajudam a consultar o histórico.",
+      },
+    ],
     steps: [
       {
         title: "Registre uma movimentação de matéria-prima",
@@ -221,6 +258,13 @@ const guides: ManualGuide[] = [
     title: "Qualidade, manutenção e rastreabilidade",
     summary: "Documente inspeções, ocorrências e manutenção e encontre o histórico por OP ou lote.",
     icon: ShieldCheck,
+    illustrations: [
+      {
+        src: manualChecklistsImage,
+        alt: "Tela de checklists de qualidade com uma seta para Novo Checklist.",
+        caption: "Comece em Novo Checklist. Informe responsável, setor e data; vincule uma OP ou máquina para facilitar as consultas.",
+      },
+    ],
     steps: [
       {
         title: "Registre checklists de qualidade",
@@ -260,6 +304,13 @@ const guides: ManualGuide[] = [
     title: "Relatórios, backup e cuidados com os dados",
     summary: "Exporte o que estiver disponível e entenda as limitações desta versão publicada no GitHub Pages.",
     icon: FileText,
+    illustrations: [
+      {
+        src: manualRelatoriosImage,
+        alt: "Tela de relatórios com uma seta indicando uma opção de exportação CSV.",
+        caption: "A seta aponta para CSV. Ajuste o período e baixe os registros disponíveis; Excel e PDF ainda exibem uma mensagem nesta versão.",
+      },
+    ],
     steps: [
       {
         title: "Exporte relatórios operacionais",
@@ -416,7 +467,21 @@ export default function ManualPage() {
               <p>{guide.summary}</p>
             </div>
             <span className="manual-detail-icon"><guide.icon size={26} aria-hidden="true" /></span>
-          </div>
+            </div>
+
+          <section className="manual-illustration-grid" aria-label="Capturas de tela com indicações">
+            {guide.illustrations.map((illustration) => (
+              <figure className="manual-illustration" key={illustration.src}>
+                <img
+                  src={illustration.src}
+                  alt={illustration.alt}
+                  loading="lazy"
+                  decoding="async"
+                />
+                <figcaption>{illustration.caption}</figcaption>
+              </figure>
+            ))}
+          </section>
 
           <div className="manual-detail-list">
             {guide.steps.map((step, index) => (
