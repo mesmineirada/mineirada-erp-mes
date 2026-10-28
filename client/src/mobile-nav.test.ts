@@ -5,6 +5,7 @@ import { resolve } from "node:path";
 describe("menu lateral móvel", () => {
   const app = readFileSync(resolve(process.cwd(), "client/src/App.tsx"), "utf8");
   const css = readFileSync(resolve(process.cwd(), "client/src/index.css"), "utf8");
+  const manual = readFileSync(resolve(process.cwd(), "client/src/ManualPage.tsx"), "utf8");
   const localization = readFileSync(resolve(process.cwd(), "client/src/localization.ts"), "utf8");
   const indexHtml = readFileSync(resolve(process.cwd(), "client/index.html"), "utf8");
 
@@ -75,8 +76,7 @@ describe("menu lateral móvel", () => {
     expect(app).toContain('setShowSplash(true)');
     expect(app).toContain('setTimeout(() => setShowSplash(false), 2000)');
     expect(app).toContain('className="welcome-splash"');
-    expect(app).toContain("await supabase.auth.updateUser");
-    expect(app).toContain("authUserFromSupabase(data.user)");
+    expect(app).toContain('localStorage.setItem("mineirada_user_profile", JSON.stringify(profile))');
     expect(css).toContain('.welcome-splash');
     expect(css).toContain('welcome-splash-out 2s');
   });
@@ -97,11 +97,10 @@ describe("menu lateral móvel", () => {
     expect(app).toContain('main-scroll-locked');
   });
 
-  it("mostra o atalho de autorização a gestores, gerentes e administradores", () => {
+  it("mantém o atalho de autorização restrito ao perfil gerencial", () => {
     expect(app).toContain('href: "/producao/ordens?view=autorizar"');
     expect(app).toContain("managerOnly: true");
     expect(app).toContain('user.role === "gerente"');
-    expect(app).toContain('user.role === "admin"');
     expect(app).toContain('authorizationView');
   });
 
@@ -175,9 +174,8 @@ describe("menu lateral móvel", () => {
   it("oferece rastreabilidade pública por QR sem login e mostra a etapa atual", () => {
     expect(app).toContain('location.match(/^\\/consulta-pedido\\/(.+)$/)');
     expect(app).toContain('Nome (opcional)');
-    expect(app).toContain('supabase.rpc("public_lookup_order"');
+    expect(app).toContain('getProductionProgress');
     expect(app).toContain('Etapa atual');
-    expect(app).toContain('visibility.showLocation');
     expect(app).toContain('Último apontamento:');
   });
 
@@ -257,15 +255,18 @@ describe("menu lateral móvel", () => {
     expect(app).toContain('Custo total da receita');
     expect(app).toContain('formatCurrency(numericMoney(r.cost))');
   });
-  it("mantém logo, marca móvel e ilustração industrial com assets estáveis", () => {
+  it("mantém a marca móvel e os artigos do manual em componente próprio", () => {
     expect(app).toContain('const LOGO = EMBEDDED_LOGO;');
     expect(app).toContain('const MARK = EMBEDDED_MARK;');
     expect(app).toContain('className="mobile-topbar-mark"');
     expect(app).not.toContain('className="login-illustration"');
-    expect(app).toContain('src={MANUAL_ART}');
+    expect(manual).toContain("Manual de uso do Mineirada ERP + MES");
+    expect(manual).toContain('navigate(`/manual/${item.slug}`)');
+    expect(css).toContain(".manual-detail-step");
     expect(css).toContain('.mobile-topbar-mark { display: none;');
     expect(css).not.toContain('.login-illustration { display: block;');
   });
+
   it("usa Supabase Auth em vez de autenticação estática no site publicado", () => {
     expect(app).toContain("supabase.auth.signInWithPassword");
     expect(app).toContain("supabase.auth.onAuthStateChange");
