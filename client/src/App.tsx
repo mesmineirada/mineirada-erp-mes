@@ -82,7 +82,7 @@ import {
 
 const LOGO = EMBEDDED_LOGO;
 const MARK = EMBEDDED_MARK;
-const MANUAL_ART = "/manus-storage/mineirada-industrial-line_2d57a9e5.png";
+const MANUAL_ART = EMBEDDED_LOGO;
 const MONITOR_ART = "/manus-storage/mineirada-monitor-illustration_738fae73.png";
 const OPERATOR_ART = "/manus-storage/mineirada-operator_c6faac08.png";
 type Role = "gestor" | "admin" | "gerente" | "operador" | "qualidade" | "manutencao" | "user";
