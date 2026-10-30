@@ -1,120 +1,65 @@
-# Mineirada ERP + MES — Réplica navegável
+# Mineirada ERP + MES
 
-Esta aplicação reproduz a interface operacional do Mineirada ERP + MES observada no projeto de referência. O escopo inclui a tela de login, consulta pública de pedidos, dashboard, menu lateral completo, cadastros, pedidos, estoques, almoxarifado, produção, apontamentos por setor, monitores, rastreabilidade, relatórios, manual de uso, app do operador, usuários e administração.
+Aplicação web do Mineirada ERP + MES. O frontend é publicado no GitHub Pages; autenticação, leitura e gravação do snapshot operacional usam Supabase Auth e a Data API protegida por RLS. As tabelas normalizadas permanecem sem acesso direto do navegador.
 
-> **Importante:** esta versão é uma réplica frontend estática. O login e os registros operacionais funcionam localmente no navegador para permitir a navegação e a validação dos fluxos; não há banco de dados, API ou autenticação segura nesta versão. Para operação real com múltiplos usuários, o armazenamento local deve ser substituído por um backend com autenticação e regras de permissão no servidor.
+## Requisitos e teste local
 
-## Executar localmente
-
-```bash
-pnpm install
-pnpm dev
-```
-
-Para verificar tipagem e build de produção:
+Use Node.js 22 e pnpm. Exporte a URL e a chave pública do projeto Supabase no terminal local; não use `service_role` nem `DATABASE_URL` no frontend:
 
 ```bash
-pnpm check
-pnpm build
+export VITE_SUPABASE_URL="https://<project-ref>.supabase.co"
+export VITE_SUPABASE_ANON_KEY="<anon-ou-publishable-publica>"
+bash scripts/validate-github-pages.sh
 ```
 
-O preview local do Vite fica disponível na porta `3000`. O projeto usa React, Vite, Wouter, Tailwind 4 e Lucide Icons.
-
-## Contas locais de validação
-
-A réplica frontend está configurada para aceitar as contas abaixo durante a validação local e no GitHub Pages. Como as credenciais ficam no bundle do navegador, esta autenticação **não deve ser usada para dados reais ou produção** sem migração para um backend seguro.
-
-| Usuário | Perfil | Senha |
-|---|---|---|
-| `SOUSA` | Gestor | `RGMS1234` |
-| `KARITA` | Administrador | `12345678` |
-| `FELIPE` | Administrador | `12345678` |
-
-## Rotas principais
-
-A especificação completa de telas, menus, perfis, rótulos e operações está em [`MAPEAMENTO_ORIGINAL.md`](./MAPEAMENTO_ORIGINAL.md).
-
-| Área | Rota | Situação |
-|---|---|---|
-| Login | `/login` | Implementado |
-| Consulta pública | `/consulta-pedido` | Implementado |
-| Dashboard | `/` | Implementado |
-| Manual de uso | `/manual` | Implementado |
-| Pedidos | `/pedidos` | Implementado com criação local |
-| Almoxarifado | `/almoxarifado/requisicoes` | Implementado com detalhe e baixa local |
-| Estoques | `/estoque/visao-geral`, `/estoque/lotes` | Implementado |
-| Monitores | `/monitor` e `/monitor/:setor` | Implementado |
-| Apontamentos | `/apontamento/:setor` | Implementado com registro local em tela |
-| Rastreabilidade | `/rastreabilidade` | Implementado |
-| Relatórios | `/relatorios` | Implementado com ações de exportação simuladas |
-| App Operador | `/operador` | Implementado |
-| Cadastros | `/cadastros/clientes`, `/fornecedores`, `/produtos`, `/materias-primas`, `/maquinas` | CRUD local implementado |
-| Usuários | `/admin/usuarios` | Implementado para visualização e modais |
-| Módulos auxiliares | `/producao/ordens`, `/qualidade/*`, `/manutencao`, `/custos`, `/auditoria`, `/admin/dados` | Estrutura de navegação e estados de módulo implementados |
-
-## Publicação no GitHub Pages
-
-O arquivo [`/.github/workflows/deploy-github-pages.yml`](./.github/workflows/deploy-github-pages.yml) publica automaticamente a aplicação quando há push na branch `main`. O workflow define a base do Vite com o nome do repositório, copia `index.html` para `404.html` para preservar as rotas client-side e publica o diretório `dist/public`.
-
-No repositório do GitHub, abra **Settings → Pages** e selecione **GitHub Actions** como fonte. Depois, faça o primeiro push para `main`:
+O script instala as dependências travadas, executa `pnpm check`, os testes com segredo descartável de teste, o build estático e verificações do bundle. Para abrir a SPA local como no Pages (sem iniciar o servidor tRPC):
 
 ```bash
-git init
-git add .
-git commit -m "feat: replica navegavel do Mineirada ERP MES"
-git branch -M main
-git remote add origin https://github.com/SEU_USUARIO/SEU_REPOSITORIO.git
-git push -u origin main
+pnpm exec vite --host 0.0.0.0 --port 5173
 ```
 
-O nome do repositório não deve conter espaços. Se o projeto for servido em domínio próprio ou na raiz de um domínio, o workflow continua funcionando; para execução manual em outro host, use `VITE_BASE_PATH=/`.
+Abra `http://localhost:5173/login` para testar a interface. Para verificar o login Auth e a leitura RLS sem escrever ou exibir registros, use `bash scripts/test-supabase-auth.sh`; ele solicita email e senha no terminal, sem ecoar a senha, e lê somente `id,version` da linha singleton. Use uma conta existente com `app_metadata.profile` aprovado. Não coloque a senha em arquivos, comandos versionados ou variáveis do build.
 
-## Organização do código
+A interface principal está em `client/src/App.tsx`; a inicialização do cliente Supabase fica em `client/src/lib/supabase.ts`. O servidor Express/tRPC e os artefatos PostgreSQL/Drizzle permanecem no repositório para usos server-side, mas o bundle do GitHub Pages não os chama.
 
-A interface principal está em `client/src/App.tsx`, com componentes reutilizáveis para tabelas, cards de métricas, formulários, modais, navegação e estados. O tema, tokens, responsividade e animações estão em `client/src/index.css`. O servidor Express do template permanece apenas como compatibilidade de build; esta entrega não depende dele para as funções frontend.
+## Configuração do Supabase
 
-## Limitações conhecidas
+O frontend precisa destas variáveis durante o build:
 
-Os módulos auxiliares cujo fluxo exigiria persistência no banco apresentam a estrutura visual e estados de operação, mas não gravam em um backend. As ações de exportação exibem confirmação local. A autenticação aceita o usuário de validação configurado para esta réplica, porém deve ser migrada para autenticação server-side antes de qualquer uso com dados reais.
+- `VITE_SUPABASE_URL`: URL do projeto Supabase.
+- `VITE_SUPABASE_ANON_KEY`: chave pública `anon` legada ou chave `publishable`.
 
-## Módulos operacionais implementados
+Esses valores públicos podem estar no bundle porque o banco aplica grants e RLS. **Nunca** coloque uma chave `service_role`/secret ou `DATABASE_URL` em variável `VITE_`, no GitHub Pages, no navegador ou neste repositório. O `.env.example` contém apenas marcadores, não credenciais reais.
 
-A réplica agora inclui telas navegáveis para **Ordens de Produção**, **Fluxo de Produção**, **Movimentações de Estoque**, **Checklists**, **Não Conformidades**, **Manutenção** e **Auditoria**. Os registros são persistidos no `localStorage`, começam vazios e só alteram os indicadores quando o usuário os cadastra.
+Para autenticar, a tela usa email e senha do Supabase Auth. Os usuários precisam ter `app_metadata.profile` atribuído por uma operação administrativa confiável como `admin`, `gestor` ou `gerente`; não use `user_metadata` para autorização. Novos cadastros sem perfil aprovado são recusados. Se este ERP for fechado, desabilite o signup público em **Authentication → Providers → Email** e mantenha a criação de contas apenas por administrador.
 
-As movimentações atualizam o saldo de matéria-prima quando encontram uma ficha pelo código ou nome. Criações e exclusões dos módulos operacionais geram eventos no histórico de auditoria. As telas de cadastro possuem estado de carregamento inicial, validação de campos obrigatórios, botão de salvamento com animação e mensagens de feedback não bloqueantes.
+A Data API deve estar habilitada para o projeto. A migration `supabase/migrations/20261030121418_pages_supabase_auth_rls.sql` concede `SELECT` somente na linha singleton de `workspace_state` e somente a usuários autenticados com perfil aprovado. Escritas passam por RPC com verificação de versão e perfil. Alterar a autorização de uma OP exige a RPC específica, que valida perfil `gestor`/`gerente` e estado atual da ordem. A consulta pública usa `public_lookup_order`, que retorna somente a projeção de campos configurados; a tabela completa continua inacessível a `anon`.
 
-> Esta implementação continua sendo frontend-only. Para uso produtivo, migre credenciais, registros e auditoria para um backend com autenticação segura, controle de concorrência e trilha de auditoria imutável.
+As tabelas normalizadas seguem com RLS habilitada e sem grants de navegador até existir mapeamento explícito entre Auth UID e os registros de usuário e políticas próprias para cada entidade. Não conceda acesso amplo ao schema nem habilite autoexposição indiscriminada de novas tabelas.
 
-## Identidade visual
+## Configurar o GitHub Pages
 
-A interface utiliza o logo Mineirada fornecido pelo cliente no login e na consulta pública, além do símbolo compacto na sidebar e como favicon. Os ativos foram publicados no armazenamento persistente do projeto e referenciados por seus caminhos `/manus-storage/`.
+O workflow `.github/workflows/deploy-github-pages.yml` publica a branch `main`. Em **Settings → Secrets and variables → Actions → Variables**, crie as variáveis de repositório:
 
-A validação final após a troca da marca foi concluída com `pnpm check` e `pnpm build` sem erros.
+- `VITE_SUPABASE_URL` = URL do projeto.
+- `VITE_SUPABASE_ANON_KEY` = chave pública anon/publishable.
 
-## Fluxos integrados e filtros
+Configure também em **Supabase → Authentication → URL Configuration** a `Site URL` e os redirect URLs para a origem/rota do site GitHub Pages, por exemplo `https://mesmineirada.github.io/mineirada-erp-mes/**`. Use somente URLs confiáveis e HTTPS.
 
-As listas de Pedidos e Movimentações contam com busca combinada e filtros avançados por status, prioridade, tipo, origem, destino e período. Ordens de produção podem ser relacionadas a pedidos e lotes cadastrados; Qualidade e Manutenção podem apontar OPs e máquinas relacionadas, abrir detalhes, editar registros e baixar os anexos escolhidos pelo usuário.
+Depois de configurar as variáveis e aplicar as migrations pendentes no projeto correto, execute o workflow manualmente ou publique a branch `main`. Esta cópia local não faz push ao GitHub por conta própria. O workflow valida que as duas variáveis estão preenchidas e faz build/deploy automaticamente após o push.
 
-Os anexos são convertidos para data URL e permanecem no `localStorage` da instalação, acompanhando o backup JSON local. Nenhum registro, anexo, avaliação ou dado operacional é pré-populado pela réplica.
+Passos de publicação: (1) configure as duas **Variables** do GitHub; (2) rode `bash scripts/test-supabase-auth.sh` e `bash scripts/validate-github-pages.sh` localmente; (3) revise e envie os arquivos alterados para `main`; (4) acompanhe **Actions → Deploy Mineirada ERP + MES**; (5) teste a URL publicada. Os scripts locais não fazem commit nem push.
 
-O Dashboard passou a exibir KPIs derivados dos cadastros, percentuais somente quando há base de cálculo e gráficos que permanecem em estado vazio enquanto não houver produção ou movimentações reais.
+## Dados locais e migração
 
-## Tema escuro e Código QR
+O snapshot remoto Supabase é a fonte canônica. O valor antigo de `localStorage` não é carregado nem enviado automaticamente; permanece no navegador como cópia local recuperável. Antes de migrar dados locais, exporte um backup e revise-o antes de qualquer importação. O cache novo é separado por usuário Supabase e não concede acesso nem define papel.
 
-O cabeçalho autenticado possui alternância acessível entre modo claro e modo escuro. A preferência é persistida no navegador, respeita o contraste do tema âmbar/carvão e mantém foco visível para navegação por teclado.
+A página **Administração → Dados e Backup** exporta o snapshot compartilhado atual. Ao restaurar um JSON após o deploy, a aplicação valida o arquivo, pede confirmação porque a ação substitui o workspace de todos os usuários, e só informa sucesso depois da confirmação do Supabase. Outras sessões autenticadas recebem a versão nova na sincronização periódica. Para dados restaurados na versão antiga (localStorage), mantenha o JSON original ou exporte-o novamente nessa instalação antes de atualizar; depois do deploy, importe-o pela página de backup para enviá-lo ao Supabase.
 
-Na consulta pública, o usuário pode selecionar uma imagem do Código QR ou abrir a câmera em dispositivos compatíveis. A leitura usa `BarcodeDetector` quando disponível e `jsQR` como fallback para imagens, exibindo estados de análise, sucesso e erro. Depois que um pedido é localizado, o sistema gera um Código QR real para a URL pública correspondente e oferece download em PNG ou SVG. O caminho-base do GitHub Pages é incorporado automaticamente ao código exportado.
+As gravações incluem compare-and-swap por `version`. Em caso de conflito, os dados locais são mantidos e a aplicação avisa que é necessário atualizar/sincronizar antes de continuar. Faça backups periódicos e teste restauração em ambiente separado.
 
-## Correção da tela de Estoque de Matéria-Prima
+A migração PostgreSQL baseline está em `supabase/migrations/20261029183903_mineirada_postgres_rls_baseline.sql`. A migration de Auth/RLS para Pages está em `supabase/migrations/20261030121418_pages_supabase_auth_rls.sql` e já foi aplicada ao projeto vinculado. Para migrations futuras, instale o Supabase CLI, vincule o projeto (`supabase link --project-ref tcgmsdsvfyqqnepiajsy`) e use `pnpm db:push` após revisar o SQL.
 
-A rota `Estoques > Matéria-Prima` deixou de usar o estado genérico de módulo não implementado. Ela agora lista os registros reais de `data.materials`, calcula o saldo a partir do cadastro atualizado, identifica itens abaixo do mínimo e exibe a última movimentação vinculada por código ou nome do item.
+## Áreas principais
 
-As movimentações registradas em `Almoxarifado > Movimentações` continuam atualizando o campo de estoque do cadastro. A nova tela reflete automaticamente essas alterações, oferece busca e filtro por situação e mantém atalhos para registrar movimentações ou abrir o cadastro da matéria-prima. Nenhum dado demonstrativo foi adicionado.
-
-## Persistência compartilhada entre usuários
-
-O estado operacional da aplicação agora possui uma fonte central em banco de dados na tabela `workspace_state`. A interface mantém o `localStorage` como cache de continuidade, mas consulta o workspace central ao abrir o sistema e envia cada alteração feita por um usuário autenticado no fluxo atual. A sincronização automática ocorre a cada cinco segundos e informa quando uma atualização veio de outro usuário.
-
-A gravação carrega `updatedBy` e `version`. Se a versão local estiver desatualizada, a API rejeita a gravação para evitar sobrescrever alterações mais recentes. A primeira abertura com dados locais compatíveis realiza uma migração única para o banco. A migração inicial usa um estado JSON para preservar os módulos existentes; tabelas normalizadas de produtos, matérias-primas e movimentações podem ser extraídas em uma próxima etapa sem interromper o funcionamento atual.
-
-A infraestrutura full-stack foi habilitada com Drizzle, tRPC, React Query e autenticação do template. O fluxo de credenciais legadas da réplica permanece compatível no navegador; para produção com controle de acesso server-side, o próximo passo recomendado é migrar os usuários SOUSA, KARITA e FELIPE para o provedor de autenticação do backend ou para uma tabela de contas com senha armazenada de forma segura.
+Login, consulta pública de pedidos, dashboard, cadastros, pedidos, estoques, almoxarifado, produção, apontamentos por setor, monitores, rastreabilidade, relatórios, manual de uso, auditoria e administração. O sistema mantém seus módulos operacionais atuais; a autorização de produção recebe uma validação adicional no banco.

@@ -1,164 +1,170 @@
-import { decimal, int, mysqlEnum, mysqlTable, text, timestamp, varchar } from "drizzle-orm/mysql-core";
+import {
+  bigint,
+  decimal,
+  integer,
+  jsonb,
+  pgEnum,
+  pgTable,
+  serial,
+  smallint,
+  text,
+  timestamp,
+  varchar,
+} from "drizzle-orm/pg-core";
 
-/**
- * Core user table backing auth flow.
- * Extend this file with additional tables as your product grows.
- * Columns use camelCase to match both database fields and generated types.
- */
-export const users = mysqlTable("users", {
-  /**
-   * Surrogate primary key. Auto-incremented numeric value managed by the database.
-   * Use this for relations between tables.
-   */
-  id: int("id").autoincrement().primaryKey(),
-  /** Manus OAuth identifier (openId) returned from the OAuth callback. Unique per user. */
-  openId: varchar("openId", { length: 64 }).notNull().unique(),
+/** PostgreSQL enums used by the ERP. Keep these values in sync with the Supabase migration. */
+export const userRoleEnum = pgEnum("user_role", ["user", "admin"]);
+export const stockItemKindEnum = pgEnum("stock_item_kind", ["product", "rawMaterial", "packaging"]);
+export const stockMovementTypeEnum = pgEnum("stock_movement_type", ["Entrada", "Saída", "Ajuste"]);
+export const warehouseItemKindEnum = pgEnum("warehouse_item_kind", ["rawMaterial", "packaging"]);
+
+export const users = pgTable("users", {
+  id: serial("id").primaryKey(),
+  openId: varchar("open_id", { length: 64 }).notNull().unique(),
   username: varchar("username", { length: 64 }).unique(),
-  passwordHash: text("passwordHash"),
+  passwordHash: text("password_hash"),
   profile: varchar("profile", { length: 32 }).default("user").notNull(),
   name: text("name"),
   email: varchar("email", { length: 320 }),
-  loginMethod: varchar("loginMethod", { length: 64 }),
-  role: mysqlEnum("role", ["user", "admin"]).default("user").notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-  lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
+  loginMethod: varchar("login_method", { length: 64 }),
+  role: userRoleEnum("role").default("user").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  lastSignedIn: timestamp("last_signed_in", { withTimezone: true }).defaultNow().notNull(),
 });
 
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 
-export const products = mysqlTable("products", {
-  id: int("id").autoincrement().primaryKey(),
+export const products = pgTable("products", {
+  id: serial("id").primaryKey(),
   code: varchar("code", { length: 64 }).notNull().unique(),
   name: varchar("name", { length: 255 }).notNull(),
   category: varchar("category", { length: 128 }),
   unit: varchar("unit", { length: 32 }).notNull().default("UN"),
-  salePrice: decimal("salePrice", { precision: 14, scale: 3 }).default("0"),
-  shelfLifeDays: int("shelfLifeDays"),
-  storageTemperature: varchar("storageTemperature", { length: 64 }),
-  storageLocation: varchar("storageLocation", { length: 128 }),
-  minimumStock: decimal("minimumStock", { precision: 14, scale: 3 }).default("0"),
-  active: int("active").notNull().default(1),
-  createdByUserId: int("createdByUserId").references(() => users.id),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  salePrice: decimal("sale_price", { precision: 14, scale: 3 }).default("0"),
+  shelfLifeDays: integer("shelf_life_days"),
+  storageTemperature: varchar("storage_temperature", { length: 64 }),
+  storageLocation: varchar("storage_location", { length: 128 }),
+  minimumStock: decimal("minimum_stock", { precision: 14, scale: 3 }).default("0"),
+  active: integer("active").notNull().default(1),
+  createdByUserId: integer("created_by_user_id").references(() => users.id),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
-export const rawMaterials = mysqlTable("raw_materials", {
-  id: int("id").autoincrement().primaryKey(),
+export const rawMaterials = pgTable("raw_materials", {
+  id: serial("id").primaryKey(),
   code: varchar("code", { length: 64 }).notNull().unique(),
   name: varchar("name", { length: 255 }).notNull(),
   category: varchar("category", { length: 128 }),
   unit: varchar("unit", { length: 32 }).notNull().default("KG"),
-  unitCost: decimal("unitCost", { precision: 14, scale: 3 }).default("0"),
-  minimumStock: decimal("minimumStock", { precision: 14, scale: 3 }).default("0"),
+  unitCost: decimal("unit_cost", { precision: 14, scale: 3 }).default("0"),
+  minimumStock: decimal("minimum_stock", { precision: 14, scale: 3 }).default("0"),
   supplier: varchar("supplier", { length: 255 }),
-  active: int("active").notNull().default(1),
-  createdByUserId: int("createdByUserId").references(() => users.id),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  active: integer("active").notNull().default(1),
+  createdByUserId: integer("created_by_user_id").references(() => users.id),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
-export const packagingItems = mysqlTable("packaging_items", {
-  id: int("id").autoincrement().primaryKey(),
+export const packagingItems = pgTable("packaging_items", {
+  id: serial("id").primaryKey(),
   code: varchar("code", { length: 64 }).notNull().unique(),
   name: varchar("name", { length: 255 }).notNull(),
-  packagingType: varchar("packagingType", { length: 64 }).notNull(),
+  packagingType: varchar("packaging_type", { length: 64 }).notNull(),
   size: varchar("size", { length: 64 }),
   unit: varchar("unit", { length: 32 }).notNull().default("UN"),
-  unitCost: decimal("unitCost", { precision: 14, scale: 3 }).default("0"),
-  minimumStock: decimal("minimumStock", { precision: 14, scale: 3 }).default("0"),
-  active: int("active").notNull().default(1),
-  createdByUserId: int("createdByUserId").references(() => users.id),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  unitCost: decimal("unit_cost", { precision: 14, scale: 3 }).default("0"),
+  minimumStock: decimal("minimum_stock", { precision: 14, scale: 3 }).default("0"),
+  active: integer("active").notNull().default(1),
+  createdByUserId: integer("created_by_user_id").references(() => users.id),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
-export const stockMovements = mysqlTable("stock_movements", {
-  id: int("id").autoincrement().primaryKey(),
-  externalId: varchar("externalId", { length: 96 }).notNull().unique(),
-  itemKind: mysqlEnum("itemKind", ["product", "rawMaterial", "packaging"]).notNull(),
-  itemId: int("itemId").notNull(),
-  movementType: mysqlEnum("movementType", ["Entrada", "Saída", "Ajuste"]).notNull(),
+export const stockMovements = pgTable("stock_movements", {
+  id: serial("id").primaryKey(),
+  externalId: varchar("external_id", { length: 96 }).notNull().unique(),
+  itemKind: stockItemKindEnum("item_kind").notNull(),
+  itemId: integer("item_id").notNull(),
+  movementType: stockMovementTypeEnum("movement_type").notNull(),
   quantity: decimal("quantity", { precision: 14, scale: 3 }).notNull(),
   unit: varchar("unit", { length: 32 }).notNull(),
   origin: varchar("origin", { length: 128 }),
   destination: varchar("destination", { length: 128 }),
   lot: varchar("lot", { length: 128 }),
   note: text("note"),
-  occurredAt: timestamp("occurredAt").defaultNow().notNull(),
-  createdByUserId: int("createdByUserId").references(() => users.id),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  occurredAt: timestamp("occurred_at", { withTimezone: true }).defaultNow().notNull(),
+  createdByUserId: integer("created_by_user_id").references(() => users.id),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
-export const productionOrders = mysqlTable("production_orders", {
-  id: int("id").autoincrement().primaryKey(),
+export const productionOrders = pgTable("production_orders", {
+  id: serial("id").primaryKey(),
   number: varchar("number", { length: 128 }).notNull().unique(),
-  productId: int("productId").references(() => products.id),
-  productName: varchar("productName", { length: 255 }).notNull(),
+  productId: integer("product_id").references(() => products.id),
+  productName: varchar("product_name", { length: 255 }).notNull(),
   quantity: decimal("quantity", { precision: 14, scale: 3 }).notNull(),
   unit: varchar("unit", { length: 32 }).notNull().default("UN"),
-  deliveryDate: varchar("deliveryDate", { length: 16 }),
+  deliveryDate: varchar("delivery_date", { length: 16 }),
   priority: varchar("priority", { length: 32 }).notNull().default("Normal"),
   status: varchar("status", { length: 32 }).notNull().default("Planejada"),
-  linkedOrder: varchar("linkedOrder", { length: 128 }),
+  linkedOrder: varchar("linked_order", { length: 128 }),
   lot: varchar("lot", { length: 128 }),
   notes: text("notes"),
-  authorizationStatus: varchar("authorizationStatus", { length: 32 }).notNull().default("Pendente"),
-  materialSeparated: int("materialSeparated").notNull().default(0),
-  suppliesSeparated: int("suppliesSeparated").notNull().default(0),
-  productionReleased: int("productionReleased").notNull().default(0),
-  finishedStocked: int("finishedStocked").notNull().default(0),
-  createdByUserId: int("createdByUserId").references(() => users.id),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  authorizationStatus: varchar("authorization_status", { length: 32 }).notNull().default("Pendente"),
+  materialSeparated: integer("material_separated").notNull().default(0),
+  suppliesSeparated: integer("supplies_separated").notNull().default(0),
+  productionReleased: integer("production_released").notNull().default(0),
+  finishedStocked: integer("finished_stocked").notNull().default(0),
+  createdByUserId: integer("created_by_user_id").references(() => users.id),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
-export const warehouseRequisitions = mysqlTable("warehouse_requisitions", {
-  id: int("id").autoincrement().primaryKey(),
-  requestNumber: varchar("requestNumber", { length: 128 }).notNull().unique(),
-  productionOrderId: int("productionOrderId").references(() => productionOrders.id),
-  orderNumber: varchar("orderNumber", { length: 128 }),
-  itemKind: mysqlEnum("itemKind", ["rawMaterial", "packaging"]).notNull(),
-  itemId: int("itemId").notNull(),
-  itemName: varchar("itemName", { length: 255 }).notNull(),
+export const warehouseRequisitions = pgTable("warehouse_requisitions", {
+  id: serial("id").primaryKey(),
+  requestNumber: varchar("request_number", { length: 128 }).notNull().unique(),
+  productionOrderId: integer("production_order_id").references(() => productionOrders.id),
+  orderNumber: varchar("order_number", { length: 128 }),
+  itemKind: warehouseItemKindEnum("item_kind").notNull(),
+  itemId: integer("item_id").notNull(),
+  itemName: varchar("item_name", { length: 255 }).notNull(),
   quantity: decimal("quantity", { precision: 14, scale: 3 }).notNull(),
   unit: varchar("unit", { length: 32 }).notNull(),
   status: varchar("status", { length: 32 }).notNull().default("Pendente"),
-  requestedByUserId: int("requestedByUserId").references(() => users.id),
-  requestedByName: varchar("requestedByName", { length: 128 }),
-  requestedAt: timestamp("requestedAt").defaultNow().notNull(),
+  requestedByUserId: integer("requested_by_user_id").references(() => users.id),
+  requestedByName: varchar("requested_by_name", { length: 128 }),
+  requestedAt: timestamp("requested_at", { withTimezone: true }).defaultNow().notNull(),
   notes: text("notes"),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
-export const productionEntries = mysqlTable("production_entries", {
-  id: int("id").autoincrement().primaryKey(),
-  externalId: varchar("externalId", { length: 96 }).notNull().unique(),
-  productionOrderNumber: varchar("productionOrderNumber", { length: 128 }).notNull(),
+export const productionEntries = pgTable("production_entries", {
+  id: serial("id").primaryKey(),
+  externalId: varchar("external_id", { length: 96 }).notNull().unique(),
+  productionOrderNumber: varchar("production_order_number", { length: 128 }).notNull(),
   sector: varchar("sector", { length: 64 }).notNull(),
   received: decimal("received", { precision: 14, scale: 3 }).default("0"),
   sent: decimal("sent", { precision: 14, scale: 3 }).default("0"),
   loss: decimal("loss", { precision: 14, scale: 3 }).default("0"),
   temperature: decimal("temperature", { precision: 8, scale: 2 }),
-  occurredAt: timestamp("occurredAt").defaultNow().notNull(),
-  createdByUserId: int("createdByUserId").references(() => users.id),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  occurredAt: timestamp("occurred_at", { withTimezone: true }).defaultNow().notNull(),
+  createdByUserId: integer("created_by_user_id").references(() => users.id),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
 /**
- * Estado operacional compartilhado da instalação.
- * O conteúdo é JSON para preservar os módulos existentes durante a migração
- * gradual para tabelas normalizadas, sem criar cópias diferentes por usuário.
+ * Shared ERP snapshot. The existing Supabase table is jsonb with snake_case columns;
+ * keep this mapping stable so no production snapshot needs to be rewritten.
  */
-export const workspaceState = mysqlTable("workspace_state", {
-  id: int("id").primaryKey(),
-  state: text("state").notNull(),
-  updatedBy: varchar("updatedBy", { length: 128 }).notNull(),
-  version: int("version").notNull().default(1),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+export const workspaceState = pgTable("workspace_state", {
+  id: smallint("id").primaryKey(),
+  state: jsonb("state").$type<unknown>().notNull(),
+  version: bigint("version", { mode: "number" }).notNull().default(1),
+  updatedBy: text("updated_by").notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
 export type WorkspaceState = typeof workspaceState.$inferSelect;
