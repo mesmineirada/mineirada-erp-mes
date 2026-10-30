@@ -39,8 +39,11 @@ jobs:
       - name: Build static site
         env:
           VITE_BASE_PATH: /${{ github.event.repository.name }}/
-          VITE_STATIC_DEPLOY: "true"
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
         run: |
+          test -n "$VITE_SUPABASE_URL" || { echo "Missing GitHub Actions variable VITE_SUPABASE_URL" >&2; exit 1; }
+          test -n "$VITE_SUPABASE_ANON_KEY" || { echo "Missing GitHub Actions variable VITE_SUPABASE_ANON_KEY" >&2; exit 1; }
           pnpm check
           pnpm build
           cp dist/public/index.html dist/public/404.html

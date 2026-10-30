@@ -3,7 +3,8 @@
  * sidebar carvão, ícones lineares, densidade operacional e rotas mapeadas.
  */
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
-import { trpc } from "./lib/trpc";
+import { supabase, supabaseConfigMissing } from "./lib/supabase";
+import type { User as SupabaseUser } from "@supabase/supabase-js";
 import { useLocation } from "wouter";
 import { useTheme } from "./contexts/ThemeContext";
 import { EMBEDDED_LOGO, EMBEDDED_MARK } from "./brandAssets";
@@ -86,13 +87,7 @@ const MARK = EMBEDDED_MARK;
 const MONITOR_ART = "/manus-storage/mineirada-monitor-illustration_738fae73.png";
 const OPERATOR_ART = "/manus-storage/mineirada-operator_c6faac08.png";
 type Role = "gestor" | "admin" | "gerente" | "operador" | "qualidade" | "manutencao" | "user";
-type AuthUser = { username: string; name: string; role: Role; email?: string; phone?: string; avatar?: string };
-type AuthAccount = AuthUser & { password: string };
-const AUTH_USERS: AuthAccount[] = [
-  { username: "SOUSA", name: "Sousa", role: "gestor", password: "RGMS1234" },
-  { username: "KARITA", name: "Karita", role: "admin", password: "12345678" },
-  { username: "FELIPE", name: "Felipe", role: "admin", password: "12345678" },
-];
+type AuthUser = { id: string; username: string; name: string; role: Role; email?: string; phone?: string; avatar?: string };
 type MenuItem = { label: string; href?: string; icon: LucideIcon; children?: MenuItem[]; adminOnly?: boolean; managerOnly?: boolean };
 type RecordItem = Record<string, any>;
 type Attachment = { name: string; size: number; type: string; dataUrl: string };
@@ -200,28 +195,104 @@ const initialData = {
   productionOrders: [] as ProductionOrder[], productionEntries: [] as ProductionEntry[], movements: [] as StockMovement[], requisitions: [] as WarehouseRequest[], qualityRecords: [] as QualityRecord[], maintenanceOrders: [] as MaintenanceOrder[], auditEvents: [] as AuditEvent[], importHistory: [] as ImportHistory[], publicTrackingSettings: { showOrderStatus: true, showDelivery: true, showProductionStage: true, showLinkedProductionOrder: true, showLastUpdate: true, showLocation: true, showTotal: false } as PublicTrackingSettings,
 };
 
-const DATA_STORAGE_KEY = "mineirada_replica_data_v2";
 function workspaceHasRecords(value: typeof initialData) {
   return Object.values(value).some((entry) => Array.isArray(entry) && entry.length > 0);
 }
-function usePersistedData() {
-  const [data, setLocalData] = useState<typeof initialData>(() => {
-    try {
-      const stored = localStorage.getItem(DATA_STORAGE_KEY);
-      if (stored) return { ...initialData, ...JSON.parse(stored) };
-      localStorage.removeItem("mineirada_replica_data");
-    } catch { /* iniciar com estrutura vazia */ }
-    return initialData;
-  });
-  const [hydrated, setHydrated] = useState(false); const [version, setVersion] = useState(0); const normalizedMigrationStarted = useRef(false); const actor = useMemo(() => { try { return JSON.parse(localStorage.getItem("mineirada_user_profile") || "{}").username || "Usuário"; } catch { return "Usuário"; } }, []);
-  const remote = trpc.workspace.get.useQuery(undefined, { refetchInterval: 5000, retry: 1 });
-  const saveRemote = trpc.workspace.save.useMutation({ onSuccess: (result) => { setVersion(result.version); window.dispatchEvent(new CustomEvent("mineirada-toast", { detail: "Dados salvos no banco compartilhado." })); }, onError: (error) => window.dispatchEvent(new CustomEvent("mineirada-toast", { detail: error.message.includes("WORKSPACE_VERSION_CONFLICT") ? "Outro usuário atualizou os dados. A tela será sincronizada." : "Não foi possível sincronizar com o banco; os dados permanecem no cache local." })) });
-  const migrateNormalized = trpc.workspace.migrateNormalized.useMutation({ onSuccess: () => window.dispatchEvent(new CustomEvent("mineirada-toast", { detail: "Dados operacionais normalizados no banco." })) });
-  useEffect(() => { const payload = remote.data?.data; if (!hydrated && !remote.isLoading) { if (payload && typeof payload === "object") { const remoteState = { ...initialData, ...(payload as Partial<typeof initialData>) }; if (workspaceHasRecords(remoteState) || !workspaceHasRecords(data)) { setLocalData(remoteState); localStorage.setItem(DATA_STORAGE_KEY, JSON.stringify(remoteState)); setVersion(remote.data?.version || 0); } else if (!remote.isError) { saveRemote.mutate({ state: data, updatedBy: actor, version: remote.data?.version || 0 }); } } else if (!remote.isError && workspaceHasRecords(data)) { saveRemote.mutate({ state: data, updatedBy: actor, version: 0 }); } if (!normalizedMigrationStarted.current && !remote.isError && (payload || workspaceHasRecords(data))) { normalizedMigrationStarted.current = true; migrateNormalized.mutate({ state: payload || data }); } setHydrated(true); return; } if (hydrated && remote.data && remote.data.version > version && remote.data.data && typeof remote.data.data === "object") { const next = { ...initialData, ...(remote.data.data as Partial<typeof initialData>) }; setLocalData(next); localStorage.setItem(DATA_STORAGE_KEY, JSON.stringify(next)); setVersion(remote.data.version); window.dispatchEvent(new CustomEvent("mineirada-toast", { detail: `Dados sincronizados por ${remote.data.updatedBy || "outro usuário"}.` })); } }, [actor, data, hydrated, migrateNormalized, remote.data, remote.isError, remote.isLoading, saveRemote, version]);
-  const setData = useCallback((next: typeof initialData) => { setLocalData(next); localStorage.setItem(DATA_STORAGE_KEY, JSON.stringify(next)); if (hydrated) saveRemote.mutate({ state: next, updatedBy: actor, version }); }, [actor, hydrated, saveRemote, version]);
-  return [data, setData] as const;
-}
+function usePersistedData(user: AuthUser) {
+  const [data, setLocalData] = useState<typeof initialData>(initialData);
+  const [ready, setReady] = useState(false);
+  const versionRef = useRef(0);
+  const pendingWrites = useRef(0);
+  const writeQueue = useRef<Promise<void>>(Promise.resolve());
+  const cacheKey = `mineirada_workspace_cache:${user.id}`;
 
+  const fetchSnapshot = useCallback(async (initial = false) => {
+    if (!supabase) return;
+    const { data: row, error } = await supabase
+      .from("workspace_state")
+      .select("state,version")
+      .eq("id", 1)
+      .single();
+    if (error || !row || !row.state || typeof row.state !== "object") {
+      if (initial) {
+        window.dispatchEvent(new CustomEvent("mineirada-toast", { detail: "Não foi possível carregar o banco compartilhado. Verifique acesso, RLS e configuração Supabase." }));
+      }
+      return;
+    }
+    const remoteState = { ...initialData, ...(row.state as Partial<typeof initialData>) };
+    const remoteVersion = Number(row.version);
+    if (!Number.isFinite(remoteVersion) || remoteVersion < 1) return;
+    if (initial || (pendingWrites.current === 0 && remoteVersion > versionRef.current)) {
+      versionRef.current = remoteVersion;
+      setLocalData(remoteState);
+      try { localStorage.setItem(cacheKey, JSON.stringify(remoteState)); } catch { /* cache não é fonte de autorização */ }
+      setReady(true);
+      if (!initial) window.dispatchEvent(new CustomEvent("mineirada-toast", { detail: "Dados sincronizados com o servidor." }));
+    }
+  }, [cacheKey]);
+
+  useEffect(() => {
+    let active = true;
+    setReady(false);
+    setLocalData(initialData);
+    versionRef.current = 0;
+    pendingWrites.current = 0;
+    if (!supabase) return () => { active = false; };
+    let cleanup = () => {};
+    void (async () => {
+      await fetchSnapshot(true);
+      if (!active) return;
+      const timer = window.setInterval(() => { void fetchSnapshot(false); }, 5000);
+      cleanup = () => window.clearInterval(timer);
+    })();
+    return () => { active = false; cleanup(); };
+  }, [user.id, fetchSnapshot]);
+
+  const setData = useCallback((next: typeof initialData): Promise<boolean> => {
+    if (!ready || !supabase) {
+      window.dispatchEvent(new CustomEvent("mineirada-toast", { detail: "O banco ainda não está pronto; a alteração não foi gravada." }));
+      return Promise.resolve(false);
+    }
+    setLocalData(next);
+    try { localStorage.setItem(cacheKey, JSON.stringify(next)); } catch { /* cache opcional */ }
+    pendingWrites.current += 1;
+    const save = writeQueue.current.then(async () => {
+      const { data: nextVersion, error } = await supabase!.rpc("save_workspace_state_guarded", {
+        p_state: next,
+        p_expected_version: versionRef.current,
+      });
+      if (error) throw error;
+      const parsedVersion = Number(nextVersion);
+      if (!Number.isFinite(parsedVersion) || parsedVersion <= versionRef.current) throw new Error("SAVE_VERSION_INVALID");
+      versionRef.current = parsedVersion;
+      window.dispatchEvent(new CustomEvent("mineirada-toast", { detail: "Dados salvos no banco compartilhado." }));
+      return true;
+    });
+    const settled = save.catch((error: unknown) => {
+      const message = error instanceof Error ? error.message : "";
+      const isConflict = message.includes("WORKSPACE_VERSION_CONFLICT") || message.includes("40001");
+      window.dispatchEvent(new CustomEvent("mineirada-toast", { detail: isConflict ? "Outro usuário salvou alterações. Seus dados locais foram mantidos; atualize a tela antes de continuar." : "Falha ao gravar no Supabase. O cache local foi mantido." }));
+      return false;
+    }).finally(() => { pendingWrites.current = Math.max(0, pendingWrites.current - 1); });
+    writeQueue.current = settled.then(() => undefined);
+    return settled;
+  }, [cacheKey, ready]);
+
+  const authorizeProductionOrder = useCallback(async (number: string) => {
+    if (!ready || !supabase) throw new Error("Supabase não está pronto.");
+    await writeQueue.current;
+    const { data: nextVersion, error } = await supabase.rpc("authorize_production_order", {
+      p_number: number,
+      p_expected_version: versionRef.current,
+    });
+    if (error) throw new Error("Não foi possível autorizar a OP no Supabase.");
+    const parsedVersion = Number(nextVersion);
+    if (!Number.isFinite(parsedVersion) || parsedVersion <= versionRef.current) throw new Error("Versão inválida retornada pelo Supabase.");
+    versionRef.current = parsedVersion;
+  }, [ready]);
+
+  return [data, setData, authorizeProductionOrder, ready] as const;
+}
 function useToast() {
   const showToast = (message: string) => window.dispatchEvent(new CustomEvent("mineirada-toast", { detail: message }));
   return { showToast };
@@ -289,12 +360,9 @@ function SelectInput({ value, onChange, children }: { value?: string; onChange?:
 function ProductAutocomplete({ value, products, onChange, placeholder = "Digite código ou nome do produto" }: { value?: string; products: RecordItem[]; onChange: (value: string) => void; placeholder?: string }) {
   const listId = "produtos-autocomplete";
   const [search, setSearch] = useState(value || ""); const [offset, setOffset] = useState(0);
-  const input = useMemo(() => ({ query: search, offset, limit: 25 }), [search, offset]);
-  const remote = trpc.catalog.products.useQuery(input, { staleTime: 30_000 });
-  const remoteProducts = (remote.data?.rows || []).map((product) => ({ code: product.code, name: product.name, unit: product.unit, price: product.price }));
-  const options = useMemo(() => { const all = [...products, ...remoteProducts]; const seen = new Set<string>(); return all.filter((product) => { const key = String(product.name || product.code || ""); if (!key || seen.has(key)) return false; seen.add(key); return true; }); }, [products, remoteProducts]);
+  const options = useMemo(() => { const seen = new Set<string>(); return products.filter((product) => { const key = String(product.name || product.code || ""); if (!key || seen.has(key)) return false; seen.add(key); return true; }); }, [products]);
   const update = (next: string) => { setSearch(next); setOffset(0); onChange(next); };
-  return <div className="autocomplete-wrap"><input className="input" list={listId} value={value ?? ""} onChange={(event) => update(event.target.value)} onFocus={() => { if (!search) setOffset(0); }} placeholder={placeholder} autoComplete="off" aria-busy={remote.isFetching} /><datalist id={listId}>{options.map((product, index) => { const key = String(product.name || product.code || ""); return <option key={`${key}-${index}`} value={key}>{`${product.code || "—"} · ${product.name || "Produto sem nome"}`}</option>; })}</datalist>{remote.isFetching && <small className="muted-inline">Buscando catálogo…</small>}{remote.data?.nextOffset !== null && <button type="button" className="text-link autocomplete-more" onMouseDown={(event) => event.preventDefault()} onClick={() => setOffset(remote.data?.nextOffset ?? offset + 25)}>Carregar mais resultados</button>}</div>;
+  return <div className="autocomplete-wrap"><input className="input" list={listId} value={value ?? ""} onChange={(event) => update(event.target.value)} onFocus={() => { if (!search) setOffset(0); }} placeholder={placeholder} autoComplete="off" /><datalist id={listId}>{options.map((product, index) => { const key = String(product.name || product.code || ""); return <option key={`${key}-${index}`} value={key}>{`${product.code || "—"} · ${product.name || "Produto sem nome"}`}</option>; })}</datalist></div>;
 }
 
 function Table({ columns, rows, empty = "Nenhum registro.", onEdit, onDelete }: { columns: string[]; rows: Array<Array<ReactNode>>; empty?: string; onEdit?: (index: number) => void; onDelete?: (index: number) => void }) {
@@ -312,10 +380,10 @@ function Button({ children, variant = "primary", onClick, type = "button", icon:
 
 function LoadingState({ label = "Carregando registros..." }: { label?: string }) { return <div className="loading-state" role="status"><RefreshCw size={18} /><span>{label}</span></div>; }
 
-function LoginPage({ onLogin }: { onLogin: (account: AuthUser) => void }) {
-  const [username, setUsername] = useState(""); const [password, setPassword] = useState(""); const [show, setShow] = useState(false); const [publicOpen, setPublicOpen] = useState(false); const [error, setError] = useState(""); const loginMutation = trpc.auth.login.useMutation(); const loading = loginMutation.isPending;
-  const submit = async (e: FormEvent) => { e.preventDefault(); setError(""); const normalizedUsername = username.trim().toUpperCase(); try { const result = await loginMutation.mutateAsync({ username: normalizedUsername, password }); const profile: AuthUser = { username: result.username, name: result.name, role: (result.role as Role) || "user" }; localStorage.setItem("mineirada_session_v1", "server-session"); localStorage.setItem("mineirada_user_profile", JSON.stringify(profile)); onLogin(profile); } catch (cause) { const staticAccount = import.meta.env.VITE_STATIC_DEPLOY === "true" ? AUTH_USERS.find((account) => account.username === normalizedUsername && account.password === password) : undefined; if (staticAccount) { const { password: _password, ...profile } = staticAccount; void _password; localStorage.setItem("mineirada_session_v1", "static-session"); localStorage.setItem("mineirada_user_profile", JSON.stringify(profile)); onLogin(profile); return; } setError(cause instanceof Error ? cause.message : "Usuário ou senha inválidos."); } };
-  return <div className="login-page"><div className="login-brand"><img className="brand-logo-full" src={LOGO} alt="Mineirada" /><h1>ERP + MES</h1><p>Sistema Industrial de Gestão</p></div><div className="login-card"><form onSubmit={submit}><Field label="Usuário"><div className="input-with-icon"><CircleUserRound size={15} /><TextInput value={username} onChange={(v) => setUsername(v.toUpperCase())} placeholder="USUÁRIO" /></div></Field><Field label="Senha"><div className="input-with-icon"><KeyRound size={15} /><TextInput value={password} onChange={setPassword} placeholder="••••••••" type={show ? "text" : "password"} /><button type="button" className="input-action" onClick={() => setShow(!show)}>{show ? <EyeOff size={16} /> : <Eye size={16} />}</button></div></Field>{error && <div className="error-banner">{error}</div>}<Button type="submit" disabled={loading} icon={loading ? RefreshCw : LogOut}>{loading ? "Entrando..." : "Entrar"}</Button></form><div className="login-divider" /><button className="public-toggle" onClick={() => setPublicOpen(!publicOpen)}><span><Search size={15} />Consultar pedido sem entrar</span>{publicOpen ? <ChevronUpIcon /> : <ChevronDown size={15} />}</button>{publicOpen && <PublicLookup compact />}</div><div className="login-note">Acesso liberado apenas para usuários cadastrados no sistema.<br />Esqueceu a senha? Procure o gestor.</div></div>;
+function LoginPage({ onLogin }: { onLogin: (email: string, password: string) => Promise<void> }) {
+  const [email, setEmail] = useState(""); const [password, setPassword] = useState(""); const [show, setShow] = useState(false); const [publicOpen, setPublicOpen] = useState(false); const [error, setError] = useState(""); const [loading, setLoading] = useState(false);
+  const submit = async (e: FormEvent) => { e.preventDefault(); setError(""); setLoading(true); try { await onLogin(email.trim(), password); } catch (cause) { setError(cause instanceof Error ? cause.message : "Email ou senha inválidos."); } finally { setLoading(false); } };
+  return <div className="login-page"><div className="login-brand"><img className="brand-logo-full" src={LOGO} alt="Mineirada" /><h1>ERP + MES</h1><p>Sistema Industrial de Gestão</p></div><div className="login-card"><form onSubmit={submit}><Field label="Email"><div className="input-with-icon"><CircleUserRound size={15} /><TextInput value={email} onChange={setEmail} placeholder="nome@empresa.com" type="email" /></div></Field><Field label="Senha"><div className="input-with-icon"><KeyRound size={15} /><TextInput value={password} onChange={setPassword} placeholder="••••••••" type={show ? "text" : "password"} /><button type="button" className="input-action" onClick={() => setShow(!show)}>{show ? <EyeOff size={16} /> : <Eye size={16} />}</button></div></Field>{supabaseConfigMissing && <div className="error-banner">Configuração Supabase ausente. Defina VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY no build.</div>}{error && <div className="error-banner">{error}</div>}<Button type="submit" disabled={loading || supabaseConfigMissing} icon={loading ? RefreshCw : LogOut}>{loading ? "Entrando..." : "Entrar"}</Button></form><div className="login-divider" /><button className="public-toggle" onClick={() => setPublicOpen(!publicOpen)}><span><Search size={15} />Consultar pedido sem entrar</span>{publicOpen ? <ChevronUpIcon /> : <ChevronDown size={15} />}</button>{publicOpen && <PublicLookup compact />}</div><div className="login-note">Acesso liberado apenas para usuários cadastrados no Supabase Auth.<br />Esqueceu a senha? Procure o gestor.</div></div>;
 }
 function ChevronUpIcon() { return <ChevronDown size={15} style={{ transform: "rotate(180deg)" }} />; }
 
@@ -360,12 +428,12 @@ function InternalCodeScannerPage({ data, setData, user }: { data: typeof initial
 }
 
 function PublicLookup({ compact = false }: { compact?: boolean }) {
-  const [location, navigate] = useLocation(); const [data] = usePersistedData(); const [name, setName] = useState(""); const [order, setOrder] = useState(""); const [searched, setSearched] = useState(false); const [error, setError] = useState(""); const [scanStatus, setScanStatus] = useState<"idle" | "scanning" | "success" | "error">("idle"); const [scanMessage, setScanMessage] = useState(""); const scanInputRef = useRef<HTMLInputElement>(null); const publicOrderNumber = useMemo(() => { const match = location.match(/^\/consulta-pedido\/(.+)$/); return match ? decodeURIComponent(match[1]) : ""; }, [location]);
-  const found = data.orders.find((item) => item.number.toLowerCase() === order.trim().toLowerCase()); const linkedProductionOrder = found ? data.productionOrders.find((item) => item.linkedOrder?.toLowerCase() === found.number.toLowerCase()) : undefined; const foundProgress = linkedProductionOrder ? getProductionProgress(linkedProductionOrder, data) : null; const visibility = { ...defaultPublicTrackingSettings, ...data.publicTrackingSettings };
-  useEffect(() => { if (publicOrderNumber && data.orders.length) { setOrder(publicOrderNumber); setSearched(Boolean(data.orders.some((item) => item.number.toLowerCase() === publicOrderNumber.toLowerCase()))); } }, [publicOrderNumber, data.orders]);
+  const [location, navigate] = useLocation(); const [name, setName] = useState(""); const [order, setOrder] = useState(""); const [searched, setSearched] = useState(false); const [error, setError] = useState(""); const [result, setResult] = useState<any>(null); const [loading, setLoading] = useState(false); const [scanStatus, setScanStatus] = useState<"idle" | "scanning" | "success" | "error">("idle"); const [scanMessage, setScanMessage] = useState(""); const scanInputRef = useRef<HTMLInputElement>(null); const publicOrderNumber = useMemo(() => { const match = location.match(/^\/consulta-pedido\/(.+)$/); return match ? decodeURIComponent(match[1]) : ""; }, [location]);
+  const found = result?.order; const linkedProductionOrder = result?.linkedProductionOrder; const foundProgress = result?.progress; const visibility = { ...defaultPublicTrackingSettings, ...result?.publicTrackingSettings };
+  const lookup = async (number: string) => { if (!supabase) { setError("A consulta pública não está configurada."); return; } setLoading(true); setError(""); setSearched(false); setResult(null); try { const { data: response, error: rpcError } = await supabase.rpc("public_lookup_order", { p_number: number }); if (rpcError) { setError("Não foi possível consultar o pedido neste momento."); return; } if (!response || typeof response !== "object") { setError("Nenhum pedido encontrado com esse número."); return; } setResult(response); setSearched(true); } catch { setError("Não foi possível consultar o pedido neste momento."); } finally { setLoading(false); } }; useEffect(() => { if (publicOrderNumber) { setOrder(publicOrderNumber); void lookup(publicOrderNumber); } }, [publicOrderNumber]);
   const scanQrImage = async (file: File) => { setScanStatus("scanning"); setScanMessage("Analisando a imagem do Código QR..."); setError(""); let bitmap: ImageBitmap | undefined; try { bitmap = await createImageBitmap(file); let raw = ""; if ("BarcodeDetector" in window) { const Detector = (window as unknown as { BarcodeDetector: new (options?: { formats?: string[] }) => { detect: (source: ImageBitmap) => Promise<Array<{ rawValue?: string }>> } }).BarcodeDetector; const result = await new Detector({ formats: ["qr_code"] }).detect(bitmap); raw = result[0]?.rawValue?.trim() || ""; } if (!raw) { const canvas = document.createElement("canvas"); const scale = Math.min(1, 1400 / Math.max(bitmap.width, bitmap.height)); canvas.width = Math.max(1, Math.round(bitmap.width * scale)); canvas.height = Math.max(1, Math.round(bitmap.height * scale)); const context = canvas.getContext("2d", { willReadFrequently: true }); if (!context) throw new Error("canvas"); context.drawImage(bitmap, 0, 0, canvas.width, canvas.height); const image = context.getImageData(0, 0, canvas.width, canvas.height); raw = jsQR(image.data, image.width, image.height, { inversionAttempts: "attemptBoth" })?.data?.trim() || ""; } if (!raw) throw new Error("empty"); const encoded = raw.toLowerCase().includes("consulta-pedido/") ? raw.split(/consulta-pedido\//i)[1]?.split(/[/?#]/)[0] : undefined; const decoded = decodeURIComponent(encoded || raw).trim(); setOrder(decoded); setScanStatus("success"); setScanMessage(`Código QR lido. O pedido ${decoded} foi preenchido.`); } catch { setScanStatus("error"); setScanMessage("Não foi possível ler um pedido nesta imagem. Use uma foto nítida do Código QR."); } finally { bitmap?.close(); } };
-  const submit = (e: FormEvent) => { e.preventDefault(); setSearched(false); if (!publicOrderNumber && !name.trim()) { setError("Informe seu nome para consultar o pedido."); return; } if (!order.trim()) { setError("Digite o número do pedido ou envie uma imagem do Código QR."); return; } if (!data.orders.some((item) => item.number.toLowerCase() === order.trim().toLowerCase())) { setError("Nenhum pedido cadastrado foi encontrado com esse número."); return; } setError(""); setScanStatus("idle"); setScanMessage(""); setSearched(true); };
-  return <div className={cn("public-lookup", compact && "public-lookup-compact")}><div className="lookup-title"><ClipboardList size={18} /><div><h3>Consultar pedido</h3>{!compact && <p>Informe seu nome e use o número do pedido ou uma imagem do Código QR. Não é necessário entrar.</p>}</div></div><form onSubmit={submit}><Field label={publicOrderNumber ? "Nome (opcional)" : "Seu nome *"}><TextInput value={name} onChange={setName} placeholder="Como podemos identificar você?" /></Field><Field label="Número do pedido ou conteúdo do Código QR"><div className="lookup-row"><TextInput value={order} onChange={setOrder} placeholder="Ex.: PED-2026-00001" /><input ref={scanInputRef} className="visually-hidden" type="file" accept="image/*" capture="environment" onChange={(e) => { const file = e.target.files?.[0]; if (file) void scanQrImage(file); e.currentTarget.value = ""; }} /><Button type="button" variant="outline" icon={scanStatus === "scanning" ? RefreshCw : QrCode} onClick={() => scanInputRef.current?.click()} disabled={scanStatus === "scanning"}>{scanStatus === "scanning" ? "Lendo Código QR..." : "Ler Código QR"}</Button></div></Field>{scanMessage && <div className={cn("qr-feedback", scanStatus === "error" ? "error" : scanStatus === "success" ? "success" : "info")} role={scanStatus === "error" ? "alert" : "status"}>{scanStatus === "scanning" ? <RefreshCw size={16} className="spin" /> : scanStatus === "success" ? <CheckCircle2 size={16} /> : <AlertTriangle size={16} />}{scanMessage}</div>}{error && <div className="error-banner" role="alert">{error}</div>}<Button type="submit" icon={Search}>Consultar pedido</Button></form>{searched && found && <div className="lookup-result"><div className="result-top"><div><span className="eyebrow">Pedido localizado</span><strong>{found.number}</strong><p>{found.client || "Cliente não informado"}</p></div>{visibility.showOrderStatus && <Pill tone={found.status === "Pronto" ? "success" : "info"}>{found.status}</Pill>}</div><div className="result-grid">{visibility.showTotal && <div><span>Valor total</span><b>{found.total || "—"}</b></div>}{visibility.showDelivery && <div><span>Previsão de entrega</span><b>{found.delivery || "—"}</b></div>}{visibility.showProductionStage && <div><span>Etapa atual</span><b>{foundProgress?.stage?.label || "Planejamento"}</b></div>}{visibility.showLinkedProductionOrder && <div><span>OP vinculada</span><b>{linkedProductionOrder?.number || "Ainda não vinculada"}</b></div>}{visibility.showLocation && <div><span>Localização atual</span><b>{foundProgress?.location || "Planejamento"}</b></div>}</div>{(visibility.showLastUpdate || visibility.showLocation) && <div className="public-progress" role="status"><strong>Acompanhamento da produção</strong>{visibility.showLastUpdate && <span>{foundProgress?.latest ? `Último apontamento: ${foundProgress.latest.date} · ${foundProgress.latest.sent || "0"} kg enviados` : "A produção ainda não possui apontamentos registrados."}</span>}{visibility.showLocation && <span>{found.status === "Concluída" ? "Produto acabado encaminhado para a Câmara Fria." : `Local atual: ${foundProgress?.location || "Planejamento"}.`}</span>}</div>}<QrCodePanel value={`${window.location.origin}${import.meta.env.BASE_URL.replace(/\/$/, "")}/consulta-pedido/${encodeURIComponent(found.number)}`} label={`Código QR do pedido ${found.number}`} /><div className="empty-state compact-empty"><Search size={24} /><p>O cliente pode abrir este mesmo endereço pelo QR Code para consultar a situação atual sem entrar no sistema.</p></div><Button variant="outline" onClick={() => navigate(`/consulta-pedido/${found.number}`)} icon={ArrowRight}>Acompanhar pedido</Button></div>}</div>;
+  const submit = async (e: FormEvent) => { e.preventDefault(); setSearched(false); if (!publicOrderNumber && !name.trim()) { setError("Informe seu nome para consultar o pedido."); return; } if (!order.trim()) { setError("Digite o número do pedido ou envie uma imagem do Código QR."); return; } setError(""); setScanStatus("idle"); setScanMessage(""); await lookup(order.trim()); };
+  return <div className={cn("public-lookup", compact && "public-lookup-compact")}><div className="lookup-title"><ClipboardList size={18} /><div><h3>Consultar pedido</h3>{!compact && <p>Informe seu nome e use o número do pedido ou uma imagem do Código QR. Não é necessário entrar.</p>}</div></div><form onSubmit={submit}><Field label={publicOrderNumber ? "Nome (opcional)" : "Seu nome *"}><TextInput value={name} onChange={setName} placeholder="Como podemos identificar você?" /></Field><Field label="Número do pedido ou conteúdo do Código QR"><div className="lookup-row"><TextInput value={order} onChange={setOrder} placeholder="Ex.: PED-2026-00001" /><input ref={scanInputRef} className="visually-hidden" type="file" accept="image/*" capture="environment" onChange={(e) => { const file = e.target.files?.[0]; if (file) void scanQrImage(file); e.currentTarget.value = ""; }} /><Button type="button" variant="outline" icon={scanStatus === "scanning" ? RefreshCw : QrCode} onClick={() => scanInputRef.current?.click()} disabled={scanStatus === "scanning"}>{scanStatus === "scanning" ? "Lendo Código QR..." : "Ler Código QR"}</Button></div></Field>{scanMessage && <div className={cn("qr-feedback", scanStatus === "error" ? "error" : scanStatus === "success" ? "success" : "info")} role={scanStatus === "error" ? "alert" : "status"}>{scanStatus === "scanning" ? <RefreshCw size={16} className="spin" /> : scanStatus === "success" ? <CheckCircle2 size={16} /> : <AlertTriangle size={16} />}{scanMessage}</div>}{error && <div className="error-banner" role="alert">{error}</div>}<Button type="submit" icon={loading ? RefreshCw : Search} disabled={loading}>{loading ? "Consultando..." : "Consultar pedido"}</Button></form>{searched && found && <div className="lookup-result"><div className="result-top"><div><span className="eyebrow">Pedido localizado</span><strong>{found.number}</strong><p>{found.client || "Cliente não informado"}</p></div>{visibility.showOrderStatus && <Pill tone={found.status === "Pronto" ? "success" : "info"}>{found.status}</Pill>}</div><div className="result-grid">{visibility.showTotal && <div><span>Valor total</span><b>{found.total || "—"}</b></div>}{visibility.showDelivery && <div><span>Previsão de entrega</span><b>{found.delivery || "—"}</b></div>}{visibility.showProductionStage && <div><span>Etapa atual</span><b>{foundProgress?.stage?.label || "Planejamento"}</b></div>}{visibility.showLinkedProductionOrder && <div><span>OP vinculada</span><b>{linkedProductionOrder?.number || "Ainda não vinculada"}</b></div>}{visibility.showLocation && <div><span>Localização atual</span><b>{foundProgress?.location || "Planejamento"}</b></div>}</div>{(visibility.showLastUpdate || visibility.showLocation) && <div className="public-progress" role="status"><strong>Acompanhamento da produção</strong>{visibility.showLastUpdate && <span>{foundProgress?.latest ? `Último apontamento: ${foundProgress.latest.date} · ${foundProgress.latest.sent || "0"} kg enviados` : "A produção ainda não possui apontamentos registrados."}</span>}{visibility.showLocation && <span>{found.status === "Concluída" ? "Produto acabado encaminhado para a Câmara Fria." : `Local atual: ${foundProgress?.location || "Planejamento"}.`}</span>}</div>}<QrCodePanel value={`${window.location.origin}${import.meta.env.BASE_URL.replace(/\/$/, "")}/consulta-pedido/${encodeURIComponent(found.number)}`} label={`Código QR do pedido ${found.number}`} /><div className="empty-state compact-empty"><Search size={24} /><p>O cliente pode abrir este mesmo endereço pelo QR Code para consultar a situação atual sem entrar no sistema.</p></div><Button variant="outline" onClick={() => navigate(`/consulta-pedido/${found.number}`)} icon={ArrowRight}>Acompanhar pedido</Button></div>}</div>;
 }
 
 function numericQuantity(value: string | number | undefined) { const parsed = Number(String(value ?? "").replace(",", ".")); return Number.isFinite(parsed) ? parsed : 0; }
@@ -553,9 +621,9 @@ function auditEvent(module: string, action: string, detail: string): AuditEvent 
   return { id: `AUD-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, module, action, user, date: new Date().toLocaleString("pt-BR"), detail };
 }
 
-function ProductionOrdersPage({ data, setData, user }: { data: typeof initialData; setData: (value: typeof initialData) => void; user: AuthUser }) {
+function ProductionOrdersPage({ data, setData, user, authorizeProductionOrder }: { data: typeof initialData; setData: (value: typeof initialData) => void; user: AuthUser; authorizeProductionOrder: (number: string) => Promise<void> }) {
   const [, navigate] = useLocation();
-  const authorizationView = new URLSearchParams(window.location.search).get("view") === "autorizar"; const [query, setQuery] = useState(""); const [confirmTarget, setConfirmTarget] = useState<ProductionOrder | null>(null); const [status, setStatus] = useState(() => { const requested = new URLSearchParams(window.location.search).get("status"); return authorizationView || requested === "abertas" ? "Abertas" : requested === "atrasadas" ? "Atrasadas" : "Todos"; }); const [modal, setModal] = useState(false); const [editing, setEditing] = useState<number | null>(null); const [form, setForm] = useState<ProductionOrder>({ number: "", product: "", quantity: "", delivery: "", priority: "Normal", status: "Planejada", notes: "", lot: "", linkedOrder: "" }); const { showToast } = useToast(); const authorizeMutation = trpc.production.authorize.useMutation(); const { requestDelete, confirmation } = useDeleteConfirmation(); const canAuthorize = user.role === "gestor" || user.role === "gerente";
+  const authorizationView = new URLSearchParams(window.location.search).get("view") === "autorizar"; const [query, setQuery] = useState(""); const [confirmTarget, setConfirmTarget] = useState<ProductionOrder | null>(null); const [status, setStatus] = useState(() => { const requested = new URLSearchParams(window.location.search).get("status"); return authorizationView || requested === "abertas" ? "Abertas" : requested === "atrasadas" ? "Atrasadas" : "Todos"; }); const [modal, setModal] = useState(false); const [editing, setEditing] = useState<number | null>(null); const [form, setForm] = useState<ProductionOrder>({ number: "", product: "", quantity: "", delivery: "", priority: "Normal", status: "Planejada", notes: "", lot: "", linkedOrder: "" }); const { showToast } = useToast(); const [authorizing, setAuthorizing] = useState(false); const { requestDelete, confirmation } = useDeleteConfirmation(); const canAuthorize = user.role === "gestor" || user.role === "gerente";
   const rows = useMemo(() => { const today = new Date().toISOString().slice(0, 10); return data.productionOrders.filter((o) => `${o.number} ${o.product} ${o.status} ${o.linkedOrder || ""} ${o.lot || ""}`.toLowerCase().includes(query.toLowerCase()) && (!authorizationView || (!o.authorizationStatus && !["Concluída", "Cancelada"].includes(o.status))) && (status === "Todos" || status === "Abertas" && !["Concluída", "Cancelada"].includes(o.status) || status === "Atrasadas" && Boolean(o.delivery && o.delivery < today && !["Concluída", "Cancelada"].includes(o.status)) || o.status === status)); }, [authorizationView, data.productionOrders, query, status]);
   const openCreate = () => { setEditing(null); setForm({ number: `OP-${Date.now()}`, product: "", quantity: "", delivery: "", priority: "Normal", status: "Planejada", notes: "", lot: "", linkedOrder: "" }); setModal(true); };
   const openEdit = (index: number) => { const target = rows[index]; const realIndex = data.productionOrders.indexOf(target); if (realIndex < 0) return; setEditing(realIndex); setForm({ ...target }); setModal(true); };
@@ -622,10 +690,10 @@ function ProductionOrdersPage({ data, setData, user }: { data: typeof initialDat
     setData({ ...data, productionOrders: nextOrders, products, materials, movements, auditEvents: [auditEvent("Ordens de Produção", "Alteração de status", `${target.number} · ${nextStatus}${shouldStock ? " · ficha técnica baixada" : ""}`), ...data.auditEvents] });
     showToast(shouldStock ? "OP concluída: matéria-prima baixada e produto enviado para a Câmara Fria." : "Situação da OP atualizada.");
   };
-  const authorize = async (target: ProductionOrder) => { if (!canAuthorize) { showToast("Somente Gestor ou Gerente pode autorizar OPs."); return; } if (["Concluída", "Cancelada"].includes(target.status)) { showToast("Esta OP não pode ser autorizada no status atual."); return; } try { await authorizeMutation.mutateAsync({ number: target.number }); const patch: Partial<ProductionOrder> = { authorizationStatus: "Autorizada", materialSeparated: true, suppliesSeparated: true, productionReleased: true, status: "Em produção" }; const nextOrders = data.productionOrders.map((order) => order === target ? { ...order, ...patch } : order); setData({ ...data, productionOrders: nextOrders, auditEvents: [{ ...auditEvent("Ordens de Produção", "Autorização", `${target.number} · MP e suprimentos separados · entrada liberada`), entityId: target.number, product: target.product, quantity: target.quantity, related: [target.linkedOrder, target.lot].filter(Boolean).join(" · ") }, ...data.auditEvents] }); showToast("OP autorizada: separação liberada e entrada na produção permitida."); setConfirmTarget(null); } catch { showToast("Não foi possível autorizar a OP no servidor."); } };
+  const authorize = async (target: ProductionOrder) => { if (!canAuthorize) { showToast("Somente Gestor ou Gerente pode autorizar OPs."); return; } if (["Concluída", "Cancelada"].includes(target.status)) { showToast("Esta OP não pode ser autorizada no status atual."); return; } setAuthorizing(true); try { await authorizeProductionOrder(target.number); const patch: Partial<ProductionOrder> = { authorizationStatus: "Autorizada", materialSeparated: true, suppliesSeparated: true, productionReleased: true, status: "Em produção" }; const nextOrders = data.productionOrders.map((order) => order === target ? { ...order, ...patch } : order); setData({ ...data, productionOrders: nextOrders, auditEvents: [{ ...auditEvent("Ordens de Produção", "Autorização", `${target.number} · MP e suprimentos separados · entrada liberada`), entityId: target.number, product: target.product, quantity: target.quantity, related: [target.linkedOrder, target.lot].filter(Boolean).join(" · ") }, ...data.auditEvents] }); showToast("OP autorizada: separação liberada e entrada na produção permitida."); setConfirmTarget(null); } catch { showToast("Não foi possível autorizar a OP no Supabase."); } finally { setAuthorizing(false); } };
   const save = (e: FormEvent) => { e.preventDefault(); if (!form.number.trim() || !form.product.trim() || !form.quantity.trim() || !Number.isFinite(Number(form.quantity)) || Number(form.quantity) <= 0) { showToast("Preencha número, produto e uma quantidade maior que zero."); return; } const next = [...data.productionOrders]; const isNew = editing === null; if (isNew) next.unshift(form); else next[editing] = form; setData({ ...data, productionOrders: next, auditEvents: [auditEvent("Ordens de Produção", isNew ? "Criação" : "Atualização", `${form.number} · ${form.product}`), ...data.auditEvents] }); setModal(false); showToast(isNew ? "Ordem de produção criada." : "Ordem de produção atualizada."); };
   const remove = (index: number) => { const target = rows[index]; if (!target) return; requestDelete(`ordem de produção ${target.number}`, () => { setData({ ...data, productionOrders: data.productionOrders.filter((o) => o !== target), auditEvents: [auditEvent("Ordens de Produção", "Exclusão", target.number), ...data.auditEvents] }); showToast("Ordem removida."); }); };
-  return <div className="page-content"><PageHeader title={<>{authorizationView ? "Autorizar Ordens de Produção" : "Ordens de Produção"} <TermHelp term="OP" /></>} description={authorizationView ? "Libere a separação de matéria-prima, suprimentos e a entrada na produção" : "Planeje, acompanhe e atualize as ordens da fábrica"}><Button icon={Plus} onClick={openCreate}>Nova OP</Button><Button variant="outline" icon={Upload} onClick={() => navigate("/producao/ordens/importar")}>Importar planilha</Button></PageHeader><div className="toolbar"><div className="search-box"><Search size={16} /><input placeholder="Buscar por OP, produto, pedido ou lote..." value={query} onChange={(e) => setQuery(e.target.value)} /></div><SelectInput value={status} onChange={setStatus}><option>Todos</option><option>Abertas</option><option>Atrasadas</option><option>Planejada</option><option>Em produção</option><option>Concluída</option><option>Pausada</option><option>Cancelada</option></SelectInput><span className="record-count">{rows.length} ordens</span></div><div className="panel table-panel"><Table columns={["OP", "Produto", "Cliente", "Pedido / lote", "Quantidade", "Entrega", "Prioridade", "Situação", "Liberação"]} rows={rows.map((o) => [<span className="mono">{o.number}</span>, o.product, data.orders.find((order) => order.number === o.linkedOrder)?.client || "—", <span className="link-text">{[o.linkedOrder, o.lot].filter(Boolean).join(" · ") || "—"}</span>, o.quantity, <input className="input quick-date-input" type="date" value={o.delivery || ""} onChange={(event) => quickUpdate(o, { delivery: event.target.value })} aria-label={`Prazo da ${o.number}`} />, <SelectInput value={o.priority} onChange={(value) => quickUpdate(o, { priority: value })}><option>Baixa</option><option>Normal</option><option>Alta</option><option>Urgente</option></SelectInput>, <SelectInput value={o.status} onChange={(value) => updateStatus(o, value)}><option>Planejada</option><option>Em produção</option><option>Concluída</option><option>Pausada</option><option>Cancelada</option></SelectInput>, o.authorizationStatus === "Autorizada" ? <span className="success-text">Autorizada · produção liberada</span> : canAuthorize ? <Button variant="outline" onClick={() => setConfirmTarget(o)} icon={Play} disabled={authorizeMutation.isPending}>Autorizar OP</Button> : <span className="muted-inline">Aguardando gerência</span>])} onEdit={openEdit} onDelete={remove} empty="Nenhuma ordem de produção cadastrada." /></div>{confirmTarget && <Modal title="Confirmar autorização da OP" onClose={() => !authorizeMutation.isPending && setConfirmTarget(null)}><div className="confirm-dialog"><div className="confirm-icon"><AlertTriangle size={22} /></div><h3>Autorizar {confirmTarget.number}?</h3><p>Esta ação separa a matéria-prima e os suprimentos vinculados e libera a entrada da OP na produção. Depois da confirmação, o status será atualizado para <strong>Em produção</strong>.</p><div className="confirm-summary"><span>Produto <b>{confirmTarget.product || "Não informado"}</b></span><span>Quantidade <b>{confirmTarget.quantity || "—"}</b></span><span>Pedido/lote <b>{[confirmTarget.linkedOrder, confirmTarget.lot].filter(Boolean).join(" · ") || "—"}</b></span></div><div className="modal-actions"><Button variant="outline" onClick={() => setConfirmTarget(null)} disabled={authorizeMutation.isPending}>Cancelar</Button><Button icon={authorizeMutation.isPending ? RefreshCw : Check} className={authorizeMutation.isPending ? "is-saving" : ""} onClick={() => void authorize(confirmTarget)} disabled={authorizeMutation.isPending}>{authorizeMutation.isPending ? "Autorizando..." : "Confirmar autorização"}</Button></div></div></Modal>}{modal && <Modal title={`${editing === null ? "Nova" : "Editar"} Ordem de Produção`} onClose={() => setModal(false)} wide><form className="modal-form" onSubmit={save}><div className="form-grid"><Field label="Número da OP *"><TextInput value={form.number} onChange={(v) => setForm({ ...form, number: v })} /></Field><Field label="Produto *"><ProductAutocomplete value={form.product} products={data.products} onChange={(v) => setForm({ ...form, product: v })} /></Field><Field label="Quantidade *"><TextInput value={form.quantity} onChange={(v) => setForm({ ...form, quantity: v })} type="number" placeholder="0" /></Field><Field label="Entrega"><TextInput value={form.delivery} onChange={(v) => setForm({ ...form, delivery: v })} type="date" /></Field><Field label="Prioridade"><SelectInput value={form.priority} onChange={(v) => setForm({ ...form, priority: v })}><option>Baixa</option><option>Normal</option><option>Alta</option><option>Urgente</option></SelectInput></Field><Field label="Situação"><SelectInput value={form.status} onChange={(v) => setForm({ ...form, status: v })}><option>Planejada</option><option>Em produção</option><option>Concluída</option><option>Pausada</option><option>Cancelada</option></SelectInput></Field><Field label="Vincular pedido"><SelectInput value={form.linkedOrder} onChange={(v) => setForm({ ...form, linkedOrder: v })}><option value="">Nenhum pedido</option>{data.orders.map((order) => <option key={order.number} value={order.number}>{order.number} · {order.client}</option>)}</SelectInput></Field><Field label="Lote"><SelectInput value={form.lot} onChange={(v) => setForm({ ...form, lot: v })}><option value="">Nenhum lote</option>{data.lots.map((lot) => <option key={lot.lot} value={lot.lot}>{lot.lot} · {lot.material}</option>)}</SelectInput></Field></div><Field label="Observações"><textarea className="input textarea" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} /></Field><div className="modal-actions"><Button variant="outline" onClick={() => setModal(false)}>Cancelar</Button><Button type="submit" icon={Check}>Salvar OP</Button></div></form></Modal>}{confirmation}</div>;
+  return <div className="page-content"><PageHeader title={<>{authorizationView ? "Autorizar Ordens de Produção" : "Ordens de Produção"} <TermHelp term="OP" /></>} description={authorizationView ? "Libere a separação de matéria-prima, suprimentos e a entrada na produção" : "Planeje, acompanhe e atualize as ordens da fábrica"}><Button icon={Plus} onClick={openCreate}>Nova OP</Button><Button variant="outline" icon={Upload} onClick={() => navigate("/producao/ordens/importar")}>Importar planilha</Button></PageHeader><div className="toolbar"><div className="search-box"><Search size={16} /><input placeholder="Buscar por OP, produto, pedido ou lote..." value={query} onChange={(e) => setQuery(e.target.value)} /></div><SelectInput value={status} onChange={setStatus}><option>Todos</option><option>Abertas</option><option>Atrasadas</option><option>Planejada</option><option>Em produção</option><option>Concluída</option><option>Pausada</option><option>Cancelada</option></SelectInput><span className="record-count">{rows.length} ordens</span></div><div className="panel table-panel"><Table columns={["OP", "Produto", "Cliente", "Pedido / lote", "Quantidade", "Entrega", "Prioridade", "Situação", "Liberação"]} rows={rows.map((o) => [<span className="mono">{o.number}</span>, o.product, data.orders.find((order) => order.number === o.linkedOrder)?.client || "—", <span className="link-text">{[o.linkedOrder, o.lot].filter(Boolean).join(" · ") || "—"}</span>, o.quantity, <input className="input quick-date-input" type="date" value={o.delivery || ""} onChange={(event) => quickUpdate(o, { delivery: event.target.value })} aria-label={`Prazo da ${o.number}`} />, <SelectInput value={o.priority} onChange={(value) => quickUpdate(o, { priority: value })}><option>Baixa</option><option>Normal</option><option>Alta</option><option>Urgente</option></SelectInput>, <SelectInput value={o.status} onChange={(value) => updateStatus(o, value)}><option>Planejada</option><option>Em produção</option><option>Concluída</option><option>Pausada</option><option>Cancelada</option></SelectInput>, o.authorizationStatus === "Autorizada" ? <span className="success-text">Autorizada · produção liberada</span> : canAuthorize ? <Button variant="outline" onClick={() => setConfirmTarget(o)} icon={Play} disabled={authorizing}>Autorizar OP</Button> : <span className="muted-inline">Aguardando gerência</span>])} onEdit={openEdit} onDelete={remove} empty="Nenhuma ordem de produção cadastrada." /></div>{confirmTarget && <Modal title="Confirmar autorização da OP" onClose={() => !authorizing && setConfirmTarget(null)}><div className="confirm-dialog"><div className="confirm-icon"><AlertTriangle size={22} /></div><h3>Autorizar {confirmTarget.number}?</h3><p>Esta ação separa a matéria-prima e os suprimentos vinculados e libera a entrada da OP na produção. Depois da confirmação, o status será atualizado para <strong>Em produção</strong>.</p><div className="confirm-summary"><span>Produto <b>{confirmTarget.product || "Não informado"}</b></span><span>Quantidade <b>{confirmTarget.quantity || "—"}</b></span><span>Pedido/lote <b>{[confirmTarget.linkedOrder, confirmTarget.lot].filter(Boolean).join(" · ") || "—"}</b></span></div><div className="modal-actions"><Button variant="outline" onClick={() => setConfirmTarget(null)} disabled={authorizing}>Cancelar</Button><Button icon={authorizing ? RefreshCw : Check} className={authorizing ? "is-saving" : ""} onClick={() => void authorize(confirmTarget)} disabled={authorizing}>{authorizing ? "Autorizando..." : "Confirmar autorização"}</Button></div></div></Modal>}{modal && <Modal title={`${editing === null ? "Nova" : "Editar"} Ordem de Produção`} onClose={() => setModal(false)} wide><form className="modal-form" onSubmit={save}><div className="form-grid"><Field label="Número da OP *"><TextInput value={form.number} onChange={(v) => setForm({ ...form, number: v })} /></Field><Field label="Produto *"><ProductAutocomplete value={form.product} products={data.products} onChange={(v) => setForm({ ...form, product: v })} /></Field><Field label="Quantidade *"><TextInput value={form.quantity} onChange={(v) => setForm({ ...form, quantity: v })} type="number" placeholder="0" /></Field><Field label="Entrega"><TextInput value={form.delivery} onChange={(v) => setForm({ ...form, delivery: v })} type="date" /></Field><Field label="Prioridade"><SelectInput value={form.priority} onChange={(v) => setForm({ ...form, priority: v })}><option>Baixa</option><option>Normal</option><option>Alta</option><option>Urgente</option></SelectInput></Field><Field label="Situação"><SelectInput value={form.status} onChange={(v) => setForm({ ...form, status: v })}><option>Planejada</option><option>Em produção</option><option>Concluída</option><option>Pausada</option><option>Cancelada</option></SelectInput></Field><Field label="Vincular pedido"><SelectInput value={form.linkedOrder} onChange={(v) => setForm({ ...form, linkedOrder: v })}><option value="">Nenhum pedido</option>{data.orders.map((order) => <option key={order.number} value={order.number}>{order.number} · {order.client}</option>)}</SelectInput></Field><Field label="Lote"><SelectInput value={form.lot} onChange={(v) => setForm({ ...form, lot: v })}><option value="">Nenhum lote</option>{data.lots.map((lot) => <option key={lot.lot} value={lot.lot}>{lot.lot} · {lot.material}</option>)}</SelectInput></Field></div><Field label="Observações"><textarea className="input textarea" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} /></Field><div className="modal-actions"><Button variant="outline" onClick={() => setModal(false)}>Cancelar</Button><Button type="submit" icon={Check}>Salvar OP</Button></div></form></Modal>}{confirmation}</div>;
 }
 
 function ProductionFlowPage({ data }: { data: typeof initialData }) {
@@ -691,16 +759,62 @@ function RecipesPage({ data, setData }: { data: typeof initialData; setData: (va
   return <div className="page-content"><PageHeader title="Cadastro de Receitas" description={`${recipes.length} receitas · ficha técnica vinculada à produção`}><TermHelp term="BOM" /><Button variant="outline" icon={Upload} onClick={() => navigate("/engenharia/receitas/importar")}>Importar planilha</Button><Button icon={Plus} onClick={openCreate}>Nova Receita</Button></PageHeader><div className="toolbar"><div className="search-box"><Search size={16} /><input placeholder="Buscar..." value={query} onChange={(e) => setQuery(e.target.value)} /></div></div><div className="panel table-panel"><Table columns={["Código", "Nome", "Produto", "Ingredientes", "Lote", "Custo total", "Situação"]} rows={recipes.map((r) => [r.code || "—", r.name || "—", r.product || "—", `${((r.ingredients as RecipeIngredient[] | undefined) || []).length} item(ns)`, r.batchSize ? `${r.batchSize} kg` : "—", r.cost && numericMoney(r.cost) > 0 ? formatCurrency(numericMoney(r.cost)) : "—", <Pill tone="success">{r.status || "Ativa"}</Pill>])} onEdit={openEdit} onDelete={remove} empty="Nenhuma receita cadastrada." /></div>{modal && <Modal title={`${editing === null ? "Nova" : "Editar"} Receita`} onClose={() => { setModal(false); setError(""); }} wide><form className="modal-form" onSubmit={save}><Field label="Produto acabado *"><ProductAutocomplete value={String(form.product || "")} products={data.products} onChange={(value) => setForm({ ...form, product: value })} placeholder="Buscar produto cadastrado" /></Field><Field label="Código da Receita *"><TextInput value={form.code as string} onChange={(value) => setForm({ ...form, code: value })} placeholder="REC001" /></Field><Field label="Nome da Receita *"><TextInput value={form.name as string} onChange={(v) => setForm({ ...form, name: v })} /></Field><div className="form-grid"><Field label="Tamanho do Lote (kg) *"><TextInput value={form.batchSize as string} onChange={(v) => setForm({ ...form, batchSize: v })} type="number" /></Field><Field label="Rendimento (%)"><TextInput value={form.yieldPct as string} onChange={(v) => setForm({ ...form, yieldPct: v })} type="number" /></Field></div><div className="form-grid three"><Field label="Perda (%)"><TextInput value={form.lossPct as string} onChange={(v) => setForm({ ...form, lossPct: v })} type="number" /></Field><Field label="Temp. (°C)"><TextInput value={form.temp as string} onChange={(v) => setForm({ ...form, temp: v })} type="number" /></Field><Field label="Validade (dias)"><TextInput value={form.shelf as string} onChange={(v) => setForm({ ...form, shelf: v })} type="number" /></Field></div><div className="panel recipe-ingredients-panel"><div className="panel-head"><div><h3>Ingredientes / Ficha Técnica</h3><p>Informe a quantidade usada por tamanho de lote. A OP usará estes valores para baixar a matéria-prima.</p></div><Button type="button" variant="outline" icon={Plus} onClick={() => setForm((current) => ({ ...current, ingredients: [...ingredients, { materialCode: "", materialName: "", quantity: "", unit: "UN" }] }))}>Adicionar ingrediente</Button></div>{ingredients.length ? <div className="recipe-ingredients-list">{ingredients.map((ingredient, index) => <div className="recipe-ingredient-row" key={`${index}-${ingredient.materialCode}`}><Field label={`Matéria-prima ${index + 1} *`}><input className="input" list="materias-primas-receita" value={ingredient.materialCode} onChange={(event) => chooseMaterial(index, event.target.value)} placeholder="Buscar polvilho, queijo, sal..." /></Field><Field label="Quantidade *"><TextInput value={ingredient.quantity} onChange={(value) => updateIngredient(index, { quantity: value })} type="number" /></Field><span className="field-unit">{ingredient.unit || "UN"}</span><Button type="button" variant="ghost" icon={Trash2} onClick={() => setForm((current) => ({ ...current, ingredients: ingredients.filter((_, position) => position !== index) }))}>Remover</Button></div>)}</div> : <div className="empty-state compact-empty"><Boxes size={26} /><p>Adicione polvilho, queijo, sal, água, gordura ou ovo à ficha técnica.</p></div>}<datalist id="materias-primas-receita">{data.materials.map((material, index) => <option key={`${material.code || material.name}-${index}`} value={String(material.code || material.name || "")}>{`${material.name || material.code || "Matéria-prima"} · ${material.unit || "UN"}`}</option>)}</datalist><div className="recipe-cost-summary"><span>Custo total da receita</span><strong>{currentRecipeCost > 0 ? formatCurrency(currentRecipeCost) : "R$ 0,00"}</strong><small>Calculado pela quantidade de cada ingrediente × custo unitário cadastrado.</small></div></div><Field label="Instruções"><textarea className="input textarea" value={form.instructions as string} onChange={(e) => setForm({ ...form, instructions: e.target.value })} /></Field>{error && <div className="error-banner" role="alert">{error}</div>}<div className="modal-actions"><Button variant="outline" onClick={() => setModal(false)}>Cancelar</Button><Button type="submit" icon={Check}>{editing === null ? "Criar receita" : "Salvar alterações"}</Button></div></form></Modal>}{confirmation}</div>;
 }
 
-function DataBackupPage() {
+function normalizeBackupData(value: unknown): typeof initialData {
+  if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("backup");
+  const source = value as Record<string, unknown>;
+  const result: Record<string, unknown> = { ...initialData };
+  for (const key of Object.keys(initialData)) {
+    if (!Object.prototype.hasOwnProperty.call(source, key)) continue;
+    const expected = (initialData as unknown as Record<string, unknown>)[key];
+    const incoming = source[key];
+    if (Array.isArray(expected)) {
+      if (!Array.isArray(incoming)) throw new Error("backup");
+      result[key] = incoming;
+    } else if (key === "publicTrackingSettings") {
+      if (!incoming || typeof incoming !== "object" || Array.isArray(incoming)) throw new Error("backup");
+      result[key] = { ...(expected as Record<string, unknown>), ...(incoming as Record<string, unknown>) };
+    } else {
+      if (typeof incoming !== typeof expected) throw new Error("backup");
+      result[key] = incoming;
+    }
+  }
+  return result as typeof initialData;
+}
+
+function DataBackupPage({ data, setData, ready }: { data: typeof initialData; setData: (value: typeof initialData) => Promise<boolean>; ready: boolean }) {
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [requireExportPassword, setRequireExportPassword] = useState(false);
   const [file, setFile] = useState<File | null>(null);
-  const exportBackup = () => { if (requireExportPassword && (password.length < 12 || password !== confirm)) { window.alert("Defina e confirme uma senha com no mínimo 12 caracteres para exportar."); return; } const data = localStorage.getItem(DATA_STORAGE_KEY) || JSON.stringify(initialData); const blob = new Blob([JSON.stringify({ version: 1, exportedAt: new Date().toISOString(), data: JSON.parse(data) }, null, 2)], { type: "application/json" }); const url = URL.createObjectURL(blob); const anchor = document.createElement("a"); anchor.href = url; anchor.download = "mineirada-backup.json"; anchor.click(); URL.revokeObjectURL(url); };
-  const restore = () => { if (!file) { window.alert("Selecione um arquivo JSON de backup para restaurar."); return; } const reader = new FileReader(); reader.onload = () => { try { const parsed = JSON.parse(String(reader.result)); if (!parsed.data) throw new Error("backup"); localStorage.setItem(DATA_STORAGE_KEY, JSON.stringify({ ...initialData, ...parsed.data })); window.location.reload(); } catch { window.alert("Arquivo de backup inválido."); } }; reader.readAsText(file); };
-  return <div className="page-content"><PageHeader title="Dados e Backup" description="Movimente o estado local do sistema com um arquivo completo, protegido e verificável." /><div className="metrics-grid three"><div className="panel info-card"><KeyRound size={18} /><h3>Credenciais protegidas</h3><p>As credenciais não são incluídas no arquivo de dados.</p></div><div className="panel info-card"><RefreshCw size={18} /><h3>Restauração segura</h3><p>O arquivo é validado antes de substituir os registros locais.</p></div><div className="panel info-card"><Database size={18} /><h3>Estado local</h3><p>Cadastros e configurações desta instalação podem ser exportados.</p></div></div><div className="panel"><div className="panel-head"><div><h3>Senha opcional para exportação</h3><p>Por padrão, exporte sem senha. Marque a opção somente se quiser exigir senha antes de exportar.</p></div><KeyRound size={17} /></div><label className="checkbox-row"><input type="checkbox" checked={requireExportPassword} onChange={(event) => setRequireExportPassword(event.target.checked)} /> <span>Exigir senha também para exportar</span></label>{requireExportPassword && <div className="form-grid"><Field label="Senha com no mínimo 12 caracteres"><TextInput type="password" value={password} onChange={setPassword} placeholder="Senha de proteção" /></Field><Field label="Confirme a senha de proteção"><TextInput type="password" value={confirm} onChange={setConfirm} placeholder="Confirme a senha" /></Field></div>}</div><div className="panel"><div className="panel-head"><div><h3>Exportar todo o sistema</h3><p>Gera imediatamente um arquivo JSON com os registros locais. A exportação não exige senha.</p></div><Download size={17} /></div><Button icon={Download} onClick={exportBackup}>Exportar backup completo</Button></div><div className="panel"><div className="panel-head"><div><h3>Restaurar backup JSON</h3><p>Selecione um arquivo JSON de backup e clique no botão. A restauração não exige senha e substitui os dados locais atuais.</p></div><Upload size={17} /></div><input className="input" type="file" accept=".json,application/json" onChange={(e) => setFile(e.target.files?.[0] || null)} />{file && <p className="field-help">Arquivo selecionado: {file.name}</p>}<div className="modal-actions"><Button variant="outline" onClick={() => setFile(null)}>Limpar seleção</Button><Button icon={Upload} onClick={restore}>Restaurar backup JSON</Button></div></div></div>;
+  const [restoring, setRestoring] = useState(false);
+  const exportBackup = () => { if (!ready) { window.alert("Aguarde o carregamento do workspace compartilhado."); return; } if (requireExportPassword && (password.length < 12 || password !== confirm)) { window.alert("Defina e confirme uma senha com no mínimo 12 caracteres para exportar."); return; } const blob = new Blob([JSON.stringify({ version: 1, exportedAt: new Date().toISOString(), data }, null, 2)], { type: "application/json" }); const url = URL.createObjectURL(blob); const anchor = document.createElement("a"); anchor.href = url; anchor.download = "mineirada-backup.json"; anchor.click(); URL.revokeObjectURL(url); };
+  const restore = async () => {
+    if (!file) { window.alert("Selecione um arquivo JSON de backup para restaurar."); return; }
+    if (!ready) { window.alert("Aguarde o carregamento do workspace compartilhado."); return; }
+    let restoredData: typeof initialData;
+    try {
+      const parsed: unknown = JSON.parse(await file.text());
+      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed) || !("data" in parsed)) throw new Error("backup");
+      restoredData = normalizeBackupData((parsed as { data: unknown }).data);
+    } catch {
+      window.alert("Arquivo de backup inválido ou incompatível.");
+      return;
+    }
+    if (!window.confirm("Este backup substituirá o workspace compartilhado do Supabase e ficará visível para os demais usuários autorizados. Continuar?")) return;
+    setRestoring(true);
+    try {
+      const saved = await setData(restoredData);
+      if (!saved) { window.alert("A restauração não foi confirmada pelo Supabase. Os outros aparelhos não verão esse backup; confira o aviso e tente novamente após sincronizar."); return; }
+      setFile(null);
+      window.dispatchEvent(new CustomEvent("mineirada-toast", { detail: "Backup restaurado e salvo no workspace compartilhado." }));
+    } catch {
+      window.alert("Não foi possível confirmar a gravação do backup no Supabase.");
+    } finally {
+      setRestoring(false);
+    }
+  };
+  return <div className="page-content"><PageHeader title="Dados e Backup" description="Exporte ou restaure o snapshot compartilhado do Supabase." /><div className="metrics-grid three"><div className="panel info-card"><KeyRound size={18} /><h3>Credenciais protegidas</h3><p>As credenciais não são incluídas no arquivo de dados.</p></div><div className="panel info-card"><RefreshCw size={18} /><h3>Restauração compartilhada</h3><p>O arquivo validado substitui o snapshot remoto após confirmação.</p></div><div className="panel info-card"><Database size={18} /><h3>Workspace Supabase</h3><p>Os dados restaurados são disponibilizados às contas autorizadas.</p></div></div><div className="panel"><div className="panel-head"><div><h3>Senha opcional para exportação</h3><p>Por padrão, exporte sem senha. Marque a opção somente se quiser exigir senha antes de exportar.</p></div><KeyRound size={17} /></div><label className="checkbox-row"><input type="checkbox" checked={requireExportPassword} onChange={(event) => setRequireExportPassword(event.target.checked)} /> <span>Exigir senha também para exportar</span></label>{requireExportPassword && <div className="form-grid"><Field label="Senha com no mínimo 12 caracteres"><TextInput type="password" value={password} onChange={setPassword} placeholder="Senha de proteção" /></Field><Field label="Confirme a senha de proteção"><TextInput type="password" value={confirm} onChange={setConfirm} placeholder="Confirme a senha" /></Field></div>}</div><div className="panel"><div className="panel-head"><div><h3>Exportar workspace</h3><p>Gera um arquivo JSON com o estado atualmente carregado do Supabase. A exportação não exige senha.</p></div><Download size={17} /></div><Button icon={Download} disabled={!ready} onClick={exportBackup}>Exportar backup compartilhado</Button></div><div className="panel"><div className="panel-head"><div><h3>Restaurar backup JSON</h3><p>A restauração substitui todo o workspace compartilhado. Confirme o envio antes de sobrescrever os dados atuais.</p></div><Upload size={17} /></div><input className="input" type="file" accept=".json,application/json" disabled={!ready || restoring} onChange={(e) => setFile(e.target.files?.[0] || null)} />{file && <p className="field-help">Arquivo selecionado: {file.name}</p>}<div className="modal-actions"><Button variant="outline" disabled={restoring} onClick={() => setFile(null)}>Limpar seleção</Button><Button icon={Upload} disabled={!ready || !file || restoring} onClick={restore}>{restoring ? "Restaurando..." : "Restaurar backup JSON no workspace"}</Button></div></div></div>;
 }
-
 function UsersPage() { const [modal, setModal] = useState(false); const [change, setChange] = useState(false); return <div className="page-content"><PageHeader title="Usuários do Sistema" description="Acesso por usuário e senha, gravados diretamente no banco de dados"><Button variant="outline" icon={KeyRound} onClick={() => setChange(true)}>Minha senha</Button><Button icon={UserPlus} onClick={() => setModal(true)}>Novo usuário</Button></PageHeader><div className="toolbar"><div className="search-box"><Search size={16} /><input placeholder="Buscar por usuário ou nome..." /></div></div><div className="panel table-panel"><div className="panel-head"><h3>Contas cadastradas</h3><Pill tone="success">3 ativas</Pill></div><Table columns={["Usuário", "Nome", "Perfil", "Situação", "Último acesso"]} rows={[[<span className="mono">SOUSA</span>, "Sousa", <Pill tone="primary">Gestor</Pill>, <Pill tone="success">Ativo</Pill>, "25/08/2026 14:32"],[<span className="mono">KARITA</span>, "Karita", <Pill tone="info">Administrador</Pill>, <Pill tone="success">Ativo</Pill>, "25/08/2026 14:40"],[<span className="mono">FELIPE</span>, "Felipe", <Pill tone="info">Administrador</Pill>, <Pill tone="success">Ativo</Pill>, "—"]]} /></div><div className="panel permission-panel"><div className="panel-head"><h3>Perfis e permissões</h3></div><div className="permission-grid">{Object.entries(roleLabels).map(([key, label]) => <div key={key}><Pill tone={key === "gestor" ? "primary" : "neutral"}>{label}</Pill><p>{key === "gestor" ? "Acesso completo a todas as funções, incluindo usuários e perfis." : key === "admin" ? "Acesso administrativo a usuários, auditoria e dados do sistema." : key === "operador" ? "Acessa o fluxo de produção, registra etapas e lotes." : key === "qualidade" ? "Gerencia checklists, não conformidades e liberação de lotes." : "Visualiza os módulos conforme a responsabilidade definida."}</p></div>)}</div></div>{modal && <Modal title="Novo usuário" onClose={() => setModal(false)}><form className="modal-form"><Field label="Usuário *"><TextInput placeholder="Ex.: JOAO" /></Field><Field label="Senha *"><TextInput type="password" placeholder="Mínimo 6 caracteres" /></Field><Field label="Perfil *"><SelectInput><option>Operador</option><option>Qualidade</option><option>Gerente</option></SelectInput></Field><div className="modal-actions"><Button variant="outline" onClick={() => setModal(false)}>Cancelar</Button><Button icon={Check}>Cadastrar</Button></div></form></Modal>}{change && <Modal title="Alterar minha senha" onClose={() => setChange(false)}><form className="modal-form"><Field label="Senha atual"><TextInput type="password" /></Field><Field label="Nova senha"><TextInput type="password" /></Field><div className="modal-actions"><Button variant="outline" onClick={() => setChange(false)}>Cancelar</Button><Button icon={Check}>Salvar</Button></div></form></Modal>}</div>; }
 
 function Sidebar({ user, onLogout, open, onClose }: { user: AuthUser; onLogout: () => void; open: boolean; onClose: () => void }) {
@@ -772,7 +886,7 @@ function PlaceholderPage({ title, description, construction = false }: { title: 
 }
 
 function AuthenticatedRouter({ user, onLogout, onProfileSave }: { user: AuthUser; onLogout: () => void; onProfileSave: (profile: Partial<AuthUser>) => void }) {
-  const [location] = useLocation(); const route = location.split(/[?#]/, 1)[0].replace(/\/+$/, "") || "/"; const [data, setData] = usePersistedData(); const common = { data, setData } as const; let content: ReactNode;
+  const [location] = useLocation(); const route = location.split(/[?#]/, 1)[0].replace(/\/+$/, "") || "/"; const [data, setData, authorizeProductionOrder, dataReady] = usePersistedData(user); const common = { data, setData } as const; let content: ReactNode;
   if (location === "/") content = <Dashboard data={data} />;
   else if (route === "/manual" || route.startsWith("/manual/")) content = <ManualPage />;
   else if (location === "/perfil") content = <ProfileSettingsPage user={user} onSave={onProfileSave} />;
@@ -790,7 +904,7 @@ function AuthenticatedRouter({ user, onLogout, onProfileSave }: { user: AuthUser
   else if (location === "/vendas/faturamento") content = <BillingPage {...common} />;
   else if (location === "/vendas/pedidos-faturados") content = <BilledOrdersPage data={data} />;
   else if (location === "/producao/ordens/importar") content = <ImportPage data={data} setData={setData} definition={importDefinitions["Ordem de Produção"]} />;
-  else if (location === "/producao/ordens") content = <ProductionOrdersPage {...common} user={user} />;
+  else if (location === "/producao/ordens") content = <ProductionOrdersPage {...common} user={user} authorizeProductionOrder={authorizeProductionOrder} />;
   else if (location === "/producao/fluxo") content = <ProductionFlowPage data={data} />;
   else if (location === "/cadastros/clientes/importar") content = <ImportPage data={data} setData={setData} definition={importDefinitions.Cliente} />;
   else if (location === "/cadastros/fornecedores/importar") content = <ImportPage data={data} setData={setData} definition={importDefinitions.Fornecedor} />;
@@ -819,31 +933,75 @@ function AuthenticatedRouter({ user, onLogout, onProfileSave }: { user: AuthUser
   else if (location === "/custos") content = <CostsPage data={data} />;
   else if (location === "/auditoria/importacoes") content = <ImportHistoryPage data={data} setData={setData} />;
   else if (location === "/auditoria") content = <AuditPage data={data} />;
-  else if (location === "/admin/dados") content = <DataBackupPage />;
+  else if (location === "/admin/dados") content = <DataBackupPage data={data} setData={setData} ready={dataReady} />;
   else if (location === "/admin/rastreio-publico") content = <PublicTrackingSettingsPage {...common} />;
   else content = <PlaceholderPage title="Página não encontrada" description="A rota solicitada não foi mapeada." />;
   return <AppLayout user={user} onLogout={onLogout} onProfileSave={onProfileSave}>{content}</AppLayout>;
 }
 
+function authUserFromSupabase(user: SupabaseUser | null): AuthUser | null {
+  if (!user) return null;
+  const profile = String(user.app_metadata?.profile || "").toLowerCase();
+  if (!["admin", "gestor", "gerente"].includes(profile)) return null;
+  const email = user.email || "";
+  const metadata = user.user_metadata || {};
+  return {
+    id: user.id,
+    username: email || user.id,
+    name: String(metadata.name || metadata.full_name || (email ? email.split("@")[0] : "Usuário")),
+    role: profile as Role,
+    email: email || undefined,
+    avatar: typeof metadata.avatar_url === "string" ? metadata.avatar_url : undefined,
+  };
+}
+
 export default function App() {
-  const [location, navigate] = useLocation(); const previewMode = new URLSearchParams(window.location.search).get("preview") === "1";
+  const [location, navigate] = useLocation();
   const routePath = location.split(/[?#]/, 1)[0].replace(/\/+$/, "") || "/";
   const nextPath = (() => { const candidate = new URLSearchParams(window.location.search).get("next"); return candidate?.startsWith("/") && !candidate.startsWith("//") ? candidate : null; })();
   const [showSplash, setShowSplash] = useState(false);
-  const [user, setUser] = useState<AuthUser | null>(() => {
-    try {
-      const raw = localStorage.getItem("mineirada_user_profile"); const stored = raw ? JSON.parse(raw) as Partial<AuthUser> : null; const account = AUTH_USERS.find((candidate) => candidate.username === stored?.username && candidate.role === stored?.role);
-      return account ? { username: account.username, name: account.name, role: account.role } : previewMode ? { username: "SOUSA", name: "Sousa", role: "gestor" } : null;
-    } catch { return previewMode ? { username: "SOUSA", name: "Sousa", role: "gestor" } : null; }
-  });
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [authReady, setAuthReady] = useState(false);
+  useEffect(() => {
+    if (!supabase) { setAuthReady(true); return; }
+    const client = supabase;
+    let active = true;
+    const applySession = (sessionUser: SupabaseUser | null) => {
+      const mapped = authUserFromSupabase(sessionUser);
+      setUser(mapped);
+      if (sessionUser && !mapped) void client.auth.signOut();
+      setAuthReady(true);
+    };
+    void client.auth.getSession().then(({ data }) => { if (active) applySession(data.session?.user || null); });
+    const { data: { subscription } } = client.auth.onAuthStateChange((_event, session) => { if (active) applySession(session?.user || null); });
+    return () => { active = false; subscription.unsubscribe(); };
+  }, []);
   useEffect(() => { if (user && routePath === "/login") navigate(nextPath || "/"); }, [user, routePath, nextPath, navigate]);
   useEffect(() => { if (!showSplash) return; const timer = window.setTimeout(() => setShowSplash(false), 2000); return () => window.clearTimeout(timer); }, [showSplash]);
-  const login = (account: AuthUser) => { setUser(account); setShowSplash(true); localStorage.setItem("mineirada_session_v1", "server-session"); localStorage.setItem("mineirada_user_profile", JSON.stringify(account)); navigate(nextPath || (routePath === "/login" ? "/" : location || "/")); };
-  const saveProfile = (profile: Partial<AuthUser>) => { setUser((current) => { if (!current) return current; const next = { ...current, ...profile }; localStorage.setItem("mineirada_user_profile", JSON.stringify(next)); return next; }); };
-  const logout = () => { localStorage.removeItem("mineirada_session_v1"); localStorage.removeItem("mineirada_user_profile"); setUser(null); navigate("/login"); };
-  if (!user && routePath !== "/consulta-pedido" && !routePath.startsWith("/consulta-pedido/")) return <LoginPage onLogin={login} />;
-  if (user && routePath === "/login") return null;
+  const login = async (email: string, password: string) => {
+    if (!supabase) throw new Error("Configuração Supabase ausente.");
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error || !data.user) throw new Error("Email ou senha inválidos.");
+    const account = authUserFromSupabase(data.user);
+    if (!account) {
+      await supabase.auth.signOut();
+      throw new Error("Este usuário não possui um perfil ERP autorizado. Procure o administrador.");
+    }
+    setUser(account);
+    setShowSplash(true);
+    navigate(nextPath || (routePath === "/login" ? "/" : location || "/"));
+  };
+  const saveProfile = (profile: Partial<AuthUser>) => {
+    setUser((current) => current ? { ...current, ...profile, id: current.id, role: current.role, username: current.username } : current);
+  };
+  const logout = () => {
+    if (supabase) void supabase.auth.signOut();
+    setUser(null);
+    navigate("/login");
+  };
   if (routePath === "/consulta-pedido" || routePath.startsWith("/consulta-pedido/")) return <div className="public-page"><div className="public-page-head"><img className="brand-logo-full" src={LOGO} alt="Mineirada" /><h1>ERP + MES</h1><p>Acompanhamento público de pedido</p></div><PublicLookup /><button className="back-login" onClick={() => navigate("/login")}><ArrowLeft size={15} /> Voltar para o acesso</button></div>;
-  const authenticatedUser = user || { username: "SOUSA", name: "Sousa", role: "gestor" };
-  return <>{showSplash && <WelcomeSplash user={authenticatedUser} />}<AuthenticatedRouter user={authenticatedUser} onLogout={logout} onProfileSave={saveProfile} /></>;
+  if (!authReady) return <div className="loading-state" role="status"><RefreshCw size={18} /><span>Validando sessão segura...</span></div>;
+  if (!user) return <LoginPage onLogin={login} />;
+  if (routePath === "/login") return null;
+  return <>{showSplash && <WelcomeSplash user={user} />}<AuthenticatedRouter user={user} onLogout={logout} onProfileSave={saveProfile} /></>;
 }

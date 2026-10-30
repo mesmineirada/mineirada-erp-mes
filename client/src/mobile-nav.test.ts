@@ -76,7 +76,8 @@ describe("menu lateral móvel", () => {
     expect(app).toContain('setShowSplash(true)');
     expect(app).toContain('setTimeout(() => setShowSplash(false), 2000)');
     expect(app).toContain('className="welcome-splash"');
-    expect(app).toContain('localStorage.setItem("mineirada_user_profile", JSON.stringify(next))');
+    expect(app).toContain("role: current.role");
+    expect(app).not.toContain('localStorage.setItem("mineirada_user_profile"');
     expect(css).toContain('.welcome-splash');
     expect(css).toContain('welcome-splash-out 2s');
   });
@@ -269,20 +270,28 @@ describe("menu lateral móvel", () => {
   });
   it("mantém o manual protegido e retorna ao caminho solicitado após o login", () => {
     expect(app).toContain('else if (route === "/manual" || route.startsWith("/manual/")) content = <ManualPage />;');
-    expect(app).toContain('if (!user && routePath !== "/consulta-pedido"');
+    expect(app).toContain('if (!user) return <LoginPage onLogin={login} />;');
     expect(app).toContain('navigate(nextPath || (routePath === "/login" ? "/" : location || "/"));');
   });
-  it("exporta e restaura o backup JSON com senha opcional somente na exportação", () => {
-    expect(app).toContain('const exportBackup = () => { if (requireExportPassword &&');
+  it("exporta e restaura o backup JSON no workspace Supabase com senha opcional somente na exportação", () => {
+    expect(app).toContain('const exportBackup = () => { if (!ready)');
+    expect(app).toContain('if (requireExportPassword && (password.length < 12 || password !== confirm))');
     expect(app).toContain('checked={requireExportPassword}');
     expect(app).toContain('Exigir senha também para exportar');
     expect(app).toContain('if (!file) { window.alert("Selecione um arquivo JSON de backup para restaurar."); return; }');
     expect(app).toContain('Restaurar backup JSON');
+    expect(app).toContain('Este backup substituirá o workspace compartilhado do Supabase');
+    expect(app).toContain('const saved = await setData(restoredData);');
+    expect(app).toContain('Backup restaurado e salvo no workspace compartilhado.');
+    expect(app).not.toContain('localStorage.setItem(DATA_STORAGE_KEY');
+    expect(app).not.toContain('window.location.reload()');
     expect(app).toContain('Senha opcional para exportação');
     expect(app).not.toContain('password.length < 12 || password !== confirm) { window.alert("Escolha um arquivo');
   });
-  it("mantém login navegável quando publicado como site estático", () => {
-    expect(app).toContain('import.meta.env.VITE_STATIC_DEPLOY === "true"');
-    expect(app).toContain('AUTH_USERS.find((account) => account.username === normalizedUsername && account.password === password)');
+  it("usa Supabase Auth no site estático e não embute contas ou senhas", () => {
+    expect(app).toContain("signInWithPassword({ email, password })");
+    expect(app).toContain("user.app_metadata?.profile");
+    expect(app).not.toContain("AUTH_USERS");
+    expect(app).not.toContain("static-session");
   });
 });

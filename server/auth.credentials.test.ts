@@ -34,7 +34,22 @@ describe("autenticação server-side e catálogo", () => {
   });
 
   it("expõe o contrato paginado do autocomplete sem aceitar limite inválido", async () => {
-    const caller = appRouter.createCaller(context);
+    const authenticatedContext = {
+      ...context,
+      user: {
+        id: 1,
+        openId: "legacy:SOUSA",
+        profile: "gestor",
+        role: "admin",
+        name: "Sousa",
+        email: null,
+        loginMethod: "credentials",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        lastSignedIn: new Date(),
+      } as TrpcContext["user"],
+    };
+    const caller = appRouter.createCaller(authenticatedContext);
     const page = await caller.catalog.products({ query: "", offset: 0, limit: 25 });
     expect(Array.isArray(page.rows)).toBe(true);
     expect(page.nextOffset === null || typeof page.nextOffset === "number").toBe(true);
