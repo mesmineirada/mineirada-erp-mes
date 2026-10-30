@@ -349,8 +349,8 @@ function Field({ label, children, wide = false }: { label: string; children: Rea
   return <label className={cn("field", wide && "field-wide")}><span>{label}</span>{children}</label>;
 }
 
-function TextInput({ value, onChange, placeholder, type = "text", disabled = false }: { value?: string | number; onChange?: (v: string) => void; placeholder?: string; type?: string; disabled?: boolean }) {
-  return <input className="input" type={type} value={value ?? ""} placeholder={placeholder} disabled={disabled} onChange={(e) => onChange?.(e.target.value)} />;
+function TextInput({ value, onChange, placeholder, type = "text", disabled = false, autoComplete }: { value?: string | number; onChange?: (v: string) => void; placeholder?: string; type?: string; disabled?: boolean; autoComplete?: string }) {
+  return <input className="input" type={type} value={value ?? ""} placeholder={placeholder} disabled={disabled} autoComplete={autoComplete} onChange={(e) => onChange?.(e.target.value)} />;
 }
 
 function SelectInput({ value, onChange, children }: { value?: string; onChange?: (v: string) => void; children: ReactNode }) {
@@ -380,10 +380,10 @@ function Button({ children, variant = "primary", onClick, type = "button", icon:
 
 function LoadingState({ label = "Carregando registros..." }: { label?: string }) { return <div className="loading-state" role="status"><RefreshCw size={18} /><span>{label}</span></div>; }
 
-function LoginPage({ onLogin }: { onLogin: (email: string, password: string) => Promise<void> }) {
-  const [email, setEmail] = useState(""); const [password, setPassword] = useState(""); const [show, setShow] = useState(false); const [publicOpen, setPublicOpen] = useState(false); const [error, setError] = useState(""); const [loading, setLoading] = useState(false);
-  const submit = async (e: FormEvent) => { e.preventDefault(); setError(""); setLoading(true); try { await onLogin(email.trim(), password); } catch (cause) { setError(cause instanceof Error ? cause.message : "Email ou senha inválidos."); } finally { setLoading(false); } };
-  return <div className="login-page"><div className="login-brand"><img className="brand-logo-full" src={LOGO} alt="Mineirada" /><h1>ERP + MES</h1><p>Sistema Industrial de Gestão</p></div><div className="login-card"><form onSubmit={submit}><Field label="Email"><div className="input-with-icon"><CircleUserRound size={15} /><TextInput value={email} onChange={setEmail} placeholder="nome@empresa.com" type="email" /></div></Field><Field label="Senha"><div className="input-with-icon"><KeyRound size={15} /><TextInput value={password} onChange={setPassword} placeholder="••••••••" type={show ? "text" : "password"} /><button type="button" className="input-action" onClick={() => setShow(!show)}>{show ? <EyeOff size={16} /> : <Eye size={16} />}</button></div></Field>{supabaseConfigMissing && <div className="error-banner">Configuração Supabase ausente. Defina VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY no build.</div>}{error && <div className="error-banner">{error}</div>}<Button type="submit" disabled={loading || supabaseConfigMissing} icon={loading ? RefreshCw : LogOut}>{loading ? "Entrando..." : "Entrar"}</Button></form><div className="login-divider" /><button className="public-toggle" onClick={() => setPublicOpen(!publicOpen)}><span><Search size={15} />Consultar pedido sem entrar</span>{publicOpen ? <ChevronUpIcon /> : <ChevronDown size={15} />}</button>{publicOpen && <PublicLookup compact />}</div><div className="login-note">Acesso liberado apenas para usuários cadastrados no Supabase Auth.<br />Esqueceu a senha? Procure o gestor.</div></div>;
+function LoginPage({ onLogin }: { onLogin: (identifier: string, password: string) => Promise<void> }) {
+  const [identifier, setIdentifier] = useState(""); const [password, setPassword] = useState(""); const [show, setShow] = useState(false); const [publicOpen, setPublicOpen] = useState(false); const [error, setError] = useState(""); const [loading, setLoading] = useState(false);
+  const submit = async (e: FormEvent) => { e.preventDefault(); setError(""); setLoading(true); try { await onLogin(identifier.trim(), password); } catch (cause) { setError(cause instanceof Error ? cause.message : "Usuário ou senha inválidos."); } finally { setLoading(false); } };
+  return <div className="login-page"><div className="login-brand"><img className="brand-logo-full" src={LOGO} alt="Mineirada" /><h1>ERP + MES</h1><p>Sistema Industrial de Gestão</p></div><div className="login-card"><form onSubmit={submit}><Field label="Usuário ou e-mail"><div className="input-with-icon"><CircleUserRound size={15} /><TextInput value={identifier} onChange={setIdentifier} placeholder="SOUSA ou nome@empresa.com" autoComplete="username" /></div></Field><Field label="Senha"><div className="input-with-icon"><KeyRound size={15} /><TextInput value={password} onChange={setPassword} placeholder="••••••••" type={show ? "text" : "password"} /><button type="button" className="input-action" onClick={() => setShow(!show)}>{show ? <EyeOff size={16} /> : <Eye size={16} />}</button></div></Field>{supabaseConfigMissing && <div className="error-banner">Configuração Supabase ausente. Defina VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY no build.</div>}{error && <div className="error-banner">{error}</div>}<Button type="submit" disabled={loading || supabaseConfigMissing} icon={loading ? RefreshCw : LogOut}>{loading ? "Entrando..." : "Entrar"}</Button></form><div className="login-divider" /><button className="public-toggle" onClick={() => setPublicOpen(!publicOpen)}><span><Search size={15} />Consultar pedido sem entrar</span>{publicOpen ? <ChevronUpIcon /> : <ChevronDown size={15} />}</button>{publicOpen && <PublicLookup compact />}</div><div className="login-note">Acesso liberado apenas para usuários cadastrados no Supabase Auth.<br />Esqueceu a senha? Procure o gestor.</div></div>;
 }
 function ChevronUpIcon() { return <ChevronDown size={15} style={{ transform: "rotate(180deg)" }} />; }
 
@@ -947,7 +947,7 @@ function authUserFromSupabase(user: SupabaseUser | null): AuthUser | null {
   const metadata = user.user_metadata || {};
   return {
     id: user.id,
-    username: email || user.id,
+    username: String(metadata.username || email || user.id).toUpperCase(),
     name: String(metadata.name || metadata.full_name || (email ? email.split("@")[0] : "Usuário")),
     role: profile as Role,
     email: email || undefined,
@@ -978,8 +978,11 @@ export default function App() {
   }, []);
   useEffect(() => { if (user && routePath === "/login") navigate(nextPath || "/"); }, [user, routePath, nextPath, navigate]);
   useEffect(() => { if (!showSplash) return; const timer = window.setTimeout(() => setShowSplash(false), 2000); return () => window.clearTimeout(timer); }, [showSplash]);
-  const login = async (email: string, password: string) => {
+  const login = async (identifier: string, password: string) => {
     if (!supabase) throw new Error("Configuração Supabase ausente.");
+    const normalized = identifier.trim();
+    if (!normalized) throw new Error("Informe o usuário ou e-mail.");
+    const email = normalized.includes("@") ? normalized : `${normalized.toLowerCase()}@mineirada.local`;
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error || !data.user) throw new Error("Email ou senha inválidos.");
     const account = authUserFromSupabase(data.user);

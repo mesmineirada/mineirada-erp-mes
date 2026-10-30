@@ -99,67 +99,18 @@ function verifyPassword(password: string, stored: string) {
   return actual.length === expected.length && timingSafeEqual(actual, expected);
 }
 
-const LEGACY_ACCOUNTS = [
-  { username: "SOUSA", name: "Sousa", profile: "gestor", password: "RGMS1234" },
-  { username: "KARITA", name: "Karita", profile: "admin", password: "12345678" },
-  { username: "FELIPE", name: "Felipe", profile: "admin", password: "12345678" },
-] as const;
-
 export async function loginWithCredentials(username: string, password: string) {
   const db = await getDb();
-  if (!db) return null;
+  if (!db || !password) return null;
 
   const normalized = username.trim().toUpperCase();
-  const account = LEGACY_ACCOUNTS.find((candidate) => candidate.username === normalized);
-  if (!account || !password) return null;
-
+  if (!normalized) return null;
   const existing = await db.select().from(users).where(eq(users.username, normalized)).limit(1);
-  let user = existing[0];
-  if (!user) {
-    const inserted = await db
-      .insert(users)
-      .values({
-        openId: `legacy:${normalized}`,
-        username: normalized,
-        passwordHash: hashPassword(account.password),
-        profile: account.profile,
-        name: account.name,
-        loginMethod: "credentials",
-        role: "admin",
-      })
-      .returning({ id: users.id });
-    const id = inserted[0]?.id;
-    if (!id) return null;
-    const created = await db.select().from(users).where(eq(users.id, id)).limit(1);
-    user = created[0];
-  }
-  if (!user) return null;
+  const user = existing[0];
+  if (!user?.passwordHash || !verifyPassword(password, user.passwordHash)) return null;
 
-  if (user.profile !== account.profile || user.role !== "admin" || !user.passwordHash) {
-    const passwordHash = user.passwordHash || hashPassword(account.password);
-    await db
-      .update(users)
-      .set({
-        profile: account.profile,
-        role: "admin",
-        passwordHash,
-        loginMethod: "credentials",
-        name: account.name,
-      })
-      .where(eq(users.id, user.id));
-    user = {
-      ...user,
-      profile: account.profile,
-      role: "admin",
-      passwordHash,
-      loginMethod: "credentials",
-      name: account.name,
-    };
-  }
-
-  if (!user.passwordHash || !verifyPassword(password, user.passwordHash)) return null;
   await db.update(users).set({ lastSignedIn: new Date() }).where(eq(users.id, user.id));
-  return user;
+  return { ...user, lastSignedIn: new Date() };
 }
 
 export async function getUserByOpenId(openId: string) {
