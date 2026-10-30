@@ -18,7 +18,7 @@ O script instala as dependências travadas, executa `pnpm check`, os testes com 
 pnpm exec vite --host 0.0.0.0 --port 5173
 ```
 
-Abra `http://localhost:5173/login` para testar a interface. Para verificar o login Auth e a leitura RLS sem escrever ou exibir registros, use `bash scripts/test-supabase-auth.sh`; ele solicita email e senha no terminal, sem ecoar a senha, e lê somente `id,version` da linha singleton. Use uma conta existente com `app_metadata.profile` aprovado. Não coloque a senha em arquivos, comandos versionados ou variáveis do build.
+Abra `http://localhost:5173/login` para testar a interface. Para verificar o login Auth e a leitura RLS sem escrever ou exibir registros, use `bash scripts/test-supabase-auth.sh`; ele solicita email e senha no terminal, sem ecoar a senha, e lê somente `id,version` da linha singleton. Use uma conta existente com `app_metadata.profile` aprovado. As contas legadas são sincronizadas na tabela `public.users` com hash scrypt; as senhas nunca ficam no código nem no bundle. Não coloque a senha em arquivos, comandos versionados ou variáveis do build.
 
 A interface principal está em `client/src/App.tsx`; a inicialização do cliente Supabase fica em `client/src/lib/supabase.ts`. O servidor Express/tRPC e os artefatos PostgreSQL/Drizzle permanecem no repositório para usos server-side, mas o bundle do GitHub Pages não os chama.
 
@@ -31,7 +31,7 @@ O frontend precisa destas variáveis durante o build:
 
 Esses valores públicos podem estar no bundle porque o banco aplica grants e RLS. **Nunca** coloque uma chave `service_role`/secret ou `DATABASE_URL` em variável `VITE_`, no GitHub Pages, no navegador ou neste repositório. O `.env.example` contém apenas marcadores, não credenciais reais.
 
-Para autenticar, a tela usa email e senha do Supabase Auth. Os usuários precisam ter `app_metadata.profile` atribuído por uma operação administrativa confiável como `admin`, `gestor` ou `gerente`; não use `user_metadata` para autorização. Novos cadastros sem perfil aprovado são recusados. Se este ERP for fechado, desabilite o signup público em **Authentication → Providers → Email** e mantenha a criação de contas apenas por administrador.
+Para autenticar, a tela aceita o nome de usuário (SOUSA, FELIPE ou KARITA) ou o e-mail técnico correspondente e usa a senha do Supabase Auth. Os usuários precisam ter `app_metadata.profile` atribuído por uma operação administrativa confiável como `admin`, `gestor` ou `gerente`; não use `user_metadata` para autorização. Novos cadastros sem perfil aprovado são recusados. Se este ERP for fechado, desabilite o signup público em **Authentication → Providers → Email** e mantenha a criação de contas apenas por administrador.
 
 A Data API deve estar habilitada para o projeto. A migration `supabase/migrations/20261030121418_pages_supabase_auth_rls.sql` concede `SELECT` somente na linha singleton de `workspace_state` e somente a usuários autenticados com perfil aprovado. Escritas passam por RPC com verificação de versão e perfil. Alterar a autorização de uma OP exige a RPC específica, que valida perfil `gestor`/`gerente` e estado atual da ordem. A consulta pública usa `public_lookup_order`, que retorna somente a projeção de campos configurados; a tabela completa continua inacessível a `anon`.
 
