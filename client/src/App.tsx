@@ -8,7 +8,7 @@ import type { User as SupabaseUser } from "@supabase/supabase-js";
 import { useLocation } from "wouter";
 import { useTheme } from "./contexts/ThemeContext";
 import { EMBEDDED_LOGO, EMBEDDED_MARK } from "./brandAssets";
-import { findMaterialForIngredient, findRecipeForProduct, normalizeInventoryKey, recipeRequirements } from "./production-inventory";
+import { findMaterialForIngredient, findRecipeForProduct, inventoryUnitsCompatible, normalizeInventoryKey, recipeRequirements } from "./production-inventory";
 import { TECHNICAL_GLOSSARY, visibleFieldLabels, type TechnicalTerm } from "./localization";
 import ManualPage from "./ManualPage";
 import QRCode from "qrcode";
@@ -640,7 +640,7 @@ function ProductionOrdersPage({ data, setData, user, authorizeProductionOrder }:
 
     if (shouldStock) {
       const recipe = findRecipeForProduct(data.recipes, target) || data.recipes.find((item) =>
-        [item.product, item.productCode, item.productName, item.name].map(normalizeInventoryKey).includes(productKey),
+        [item.product, item.productCode, item.productName, item.name, item.code].map(normalizeInventoryKey).includes(productKey),
       );
       if (!recipe) {
         showToast(`Não foi possível concluir a OP ${target.number}: não existe receita vinculada ao produto ${target.product}.`);
@@ -649,6 +649,15 @@ function ProductionOrdersPage({ data, setData, user, authorizeProductionOrder }:
       const requirements = recipeRequirements(recipe, quantity);
       if (!requirements.length) {
         showToast(`Não foi possível concluir a OP ${target.number}: a receita ${recipe.code || recipe.name || "selecionada"} não possui ingredientes com quantidade válida.`);
+        return;
+      }
+      const unitMismatches = requirements.map((requirement) => {
+        const material = findMaterialForIngredient(materials, requirement);
+        if (!material || inventoryUnitsCompatible(requirement.unit, material.unit)) return null;
+        return `${requirement.materialName || requirement.materialCode || "Matéria-prima"} (receita em ${requirement.unit || "unidade não informada"}, cadastro em ${material.unit || "unidade não informada"})`;
+      }).filter(Boolean) as string[];
+      if (unitMismatches.length) {
+        showToast(`Não foi possível concluir a OP ${target.number}: unidade incompatível na ficha técnica — ${unitMismatches.join(", ")}.`);
         return;
       }
       const missing = requirements.map((requirement) => {
@@ -671,7 +680,7 @@ function ProductionOrdersPage({ data, setData, user, authorizeProductionOrder }:
           type: "Saída",
           item: String(material.name || material.code),
           quantity: String(requirement.required),
-          unit: String(requirement.unit || material.unit || "UN"),
+          unit: String(material.unit || requirement.unit || "UN"),
           origin: `Ficha técnica ${recipe.code || recipe.name || "Receita"}`,
           destination: `Produção ${target.number}`,
           date: new Date().toISOString().slice(0, 10),

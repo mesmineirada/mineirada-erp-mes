@@ -24,7 +24,7 @@ export function findRecipeForProduct(recipes: InventoryRecipe[], product: unknow
   const targets = values.map(normalizeInventoryKey).filter(Boolean);
   if (!targets.length) return undefined;
   return recipes.find((recipe) =>
-    [recipe.product, recipe.productCode, recipe.productName, recipe.name]
+    [recipe.product, recipe.productCode, recipe.productName, recipe.name, recipe.code]
       .map(normalizeInventoryKey)
       .filter(Boolean)
       .some((key) => targets.some((target) => key === target || key.replace(/[^a-z0-9]/g, "") === target.replace(/[^a-z0-9]/g, ""))),
@@ -45,6 +45,21 @@ export function findMaterialForIngredient(materials: InventoryMaterial[], ingred
 export function numericInventoryQuantity(value: unknown) {
   const parsed = Number(String(value ?? "").replace(",", "."));
   return Number.isFinite(parsed) ? parsed : 0;
+}
+
+export function normalizeInventoryUnit(value: unknown) {
+  const unit = normalizeInventoryKey(value).replace(/\./g, "");
+  if (["kg", "quilo", "quilos", "kilograma", "kilogramas"].includes(unit)) return "kg";
+  if (["saco", "sacos"].includes(unit)) return "saco";
+  if (["un", "und", "unidade", "unidades", "pc", "pcs", "peca", "pecas"].includes(unit)) return "un";
+  if (["l", "lt", "litro", "litros"].includes(unit)) return "l";
+  return unit;
+}
+
+export function inventoryUnitsCompatible(recipeUnit: unknown, materialUnit: unknown) {
+  const recipe = normalizeInventoryUnit(recipeUnit);
+  const material = normalizeInventoryUnit(materialUnit);
+  return !recipe || !material || recipe === material;
 }
 
 export function recipeRequirements(recipe: InventoryRecipe, orderQuantity: unknown) {
