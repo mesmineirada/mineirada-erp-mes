@@ -291,7 +291,22 @@ function usePersistedData(user: AuthUser) {
     versionRef.current = parsedVersion;
   }, [ready]);
 
-  return [data, setData, authorizeProductionOrder, ready] as const;
+  const updateProductionOrderStatus = useCallback(async (number: string, status: string) => {
+    if (!ready || !supabase) throw new Error("Supabase não está pronto.");
+    await writeQueue.current;
+    const { data: nextVersion, error } = await supabase.rpc("update_production_order_status", {
+      p_number: number,
+      p_status: status,
+      p_expected_version: versionRef.current,
+    });
+    if (error) throw error;
+    const parsedVersion = Number(nextVersion);
+    if (!Number.isFinite(parsedVersion) || parsedVersion <= versionRef.current) throw new Error("Versão inválida retornada pelo Supabase.");
+    versionRef.current = parsedVersion;
+    await fetchSnapshot(true);
+  }, [fetchSnapshot, ready]);
+
+  return [data, setData, authorizeProductionOrder, updateProductionOrderStatus, ready] as const;
 }
 function useToast() {
   const showToast = (message: string) => window.dispatchEvent(new CustomEvent("mineirada-toast", { detail: message }));
@@ -621,7 +636,7 @@ function auditEvent(module: string, action: string, detail: string): AuditEvent 
   return { id: `AUD-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, module, action, user, date: new Date().toLocaleString("pt-BR"), detail };
 }
 
-function ProductionOrdersPage({ data, setData, user, authorizeProductionOrder }: { data: typeof initialData; setData: (value: typeof initialData) => void; user: AuthUser; authorizeProductionOrder: (number: string) => Promise<void> }) {
+function ProductionOrdersPage({ data, setData, user, authorizeProductionOrder, updateProductionOrderStatus }: { data: typeof initialData; setData: (value: typeof initialData) => void; user: AuthUser; authorizeProductionOrder: (number: string) => Promise<void>; updateProductionOrderStatus: (number: string, status: string) => Promise<void> }) {
   const [, navigate] = useLocation();
   const authorizationView = new URLSearchParams(window.location.search).get("view") === "autorizar"; const [query, setQuery] = useState(""); const [confirmTarget, setConfirmTarget] = useState<ProductionOrder | null>(null); const [status, setStatus] = useState(() => { const requested = new URLSearchParams(window.location.search).get("status"); return authorizationView || requested === "abertas" ? "Abertas" : requested === "atrasadas" ? "Atrasadas" : "Todos"; }); const [modal, setModal] = useState(false); const [editing, setEditing] = useState<number | null>(null); const [form, setForm] = useState<ProductionOrder>({ number: "", product: "", quantity: "", delivery: "", priority: "Normal", status: "Planejada", notes: "", lot: "", linkedOrder: "" }); const { showToast } = useToast(); const [authorizing, setAuthorizing] = useState(false); const { requestDelete, confirmation } = useDeleteConfirmation(); const canAuthorize = user.role === "gestor" || user.role === "gerente";
   const rows = useMemo(() => { const today = new Date().toISOString().slice(0, 10); return data.productionOrders.filter((o) => `${o.number} ${o.product} ${o.status} ${o.linkedOrder || ""} ${o.lot || ""}`.toLowerCase().includes(query.toLowerCase()) && (!authorizationView || (!o.authorizationStatus && !["Concluída", "Cancelada"].includes(o.status))) && (status === "Todos" || status === "Abertas" && !["Concluída", "Cancelada"].includes(o.status) || status === "Atrasadas" && Boolean(o.delivery && o.delivery < today && !["Concluída", "Cancelada"].includes(o.status)) || o.status === status)); }, [authorizationView, data.productionOrders, query, status]);
@@ -633,6 +648,17 @@ function ProductionOrdersPage({ data, setData, user, authorizeProductionOrder }:
     const movementId = `MOV-OP-${target.number}`;
     const alreadyStocked = Boolean(target.finishedStocked) || data.movements.some((movement) => movement.id === movementId);
     const shouldStock = nextStatus === "Concluída" && !alreadyStocked;
+    if (!shouldStock) {
+      void updateProductionOrderStatus(target.number, nextStatus).then(() => {
+        showToast("Situação da OP atualizada e salva no banco compartilhado.");
+      }).catch((error: unknown) => {
+        const message = error instanceof Error && (error.message.includes("WORKSPACE_VERSION_CONFLICT") || error.message.includes("40001"))
+          ? "Outro usuário salvou alterações. Atualize a tela antes de continuar."
+          : "Falha ao salvar o status da OP no Supabase.";
+        showToast(message);
+      });
+      return;
+    }
     let products = [...data.products];
     let materials = [...data.materials];
     let movements = [...data.movements];
@@ -898,7 +924,7 @@ function PlaceholderPage({ title, description, construction = false }: { title: 
 }
 
 function AuthenticatedRouter({ user, onLogout, onProfileSave }: { user: AuthUser; onLogout: () => void; onProfileSave: (profile: Partial<AuthUser>) => void }) {
-  const [location] = useLocation(); const route = location.split(/[?#]/, 1)[0].replace(/\/+$/, "") || "/"; const [data, setData, authorizeProductionOrder, dataReady] = usePersistedData(user); const common = { data, setData } as const; let content: ReactNode;
+  const [location] = useLocation(); const route = location.split(/[?#]/, 1)[0].replace(/\/+$/, "") || "/"; const [data, setData, authorizeProductionOrder, updateProductionOrderStatus, dataReady] = usePersistedData(user); const common = { data, setData } as const; let content: ReactNode;
   if (location === "/") content = <Dashboard data={data} />;
   else if (route === "/manual" || route.startsWith("/manual/")) content = <ManualPage />;
   else if (location === "/perfil") content = <ProfileSettingsPage user={user} onSave={onProfileSave} />;
@@ -916,7 +942,7 @@ function AuthenticatedRouter({ user, onLogout, onProfileSave }: { user: AuthUser
   else if (location === "/vendas/faturamento") content = <BillingPage {...common} />;
   else if (location === "/vendas/pedidos-faturados") content = <BilledOrdersPage data={data} />;
   else if (location === "/producao/ordens/importar") content = <ImportPage data={data} setData={setData} definition={importDefinitions["Ordem de Produção"]} />;
-  else if (location === "/producao/ordens") content = <ProductionOrdersPage {...common} user={user} authorizeProductionOrder={authorizeProductionOrder} />;
+  else if (location === "/producao/ordens") content = <ProductionOrdersPage {...common} user={user} authorizeProductionOrder={authorizeProductionOrder} updateProductionOrderStatus={updateProductionOrderStatus} />;
   else if (location === "/producao/fluxo") content = <ProductionFlowPage data={data} />;
   else if (location === "/cadastros/clientes/importar") content = <ImportPage data={data} setData={setData} definition={importDefinitions.Cliente} />;
   else if (location === "/cadastros/fornecedores/importar") content = <ImportPage data={data} setData={setData} definition={importDefinitions.Fornecedor} />;
