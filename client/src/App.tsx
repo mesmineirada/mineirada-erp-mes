@@ -639,7 +639,10 @@ function ProductionOrdersPage({ data, setData, user, authorizeProductionOrder }:
     const quantity = numericQuantity(target.quantity);
 
     if (shouldStock) {
-      const recipe = findRecipeForProduct(data.recipes, target) || data.recipes.find((item) =>
+      const recipe = findRecipeForProduct(data.recipes, target.product)
+        || findRecipeForProduct(data.recipes, target.productCode)
+        || findRecipeForProduct(data.recipes, target.productName)
+        || data.recipes.find((item) =>
         [item.product, item.productCode, item.productName, item.name, item.code].map(normalizeInventoryKey).includes(productKey),
       );
       if (!recipe) {
