@@ -12,13 +12,22 @@ export function normalizeInventoryKey(value: unknown) {
 }
 
 export function findRecipeForProduct(recipes: InventoryRecipe[], product: unknown) {
-  const target = normalizeInventoryKey(product);
-  if (!target) return undefined;
+  const values = product && typeof product === "object"
+    ? [
+        (product as Record<string, unknown>).product,
+        (product as Record<string, unknown>).productCode,
+        (product as Record<string, unknown>).productName,
+        (product as Record<string, unknown>).code,
+        (product as Record<string, unknown>).name,
+      ]
+    : [product];
+  const targets = values.map(normalizeInventoryKey).filter(Boolean);
+  if (!targets.length) return undefined;
   return recipes.find((recipe) =>
     [recipe.product, recipe.productCode, recipe.productName, recipe.name, recipe.code]
       .map(normalizeInventoryKey)
       .filter(Boolean)
-      .includes(target),
+      .some((key) => targets.some((target) => key === target || key.replace(/[^a-z0-9]/g, "") === target.replace(/[^a-z0-9]/g, ""))),
   );
 }
 
