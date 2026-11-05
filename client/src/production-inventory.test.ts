@@ -13,6 +13,11 @@ describe("regras de estoque e ficha técnica", () => {
     expect(findRecipeForProduct([{ productCode: "PAO-001", name: "Receita" }], "pão-001")?.name).toBe("Receita");
   });
 
+  it("considera aliases canônicos persistidos na OP", () => {
+    const recipe = { productCode: "PAO-001", productName: "Pão de Queijo Mineirada 1 KG", name: "Receita padrão" };
+    expect(findRecipeForProduct([recipe], { product: "PÃO DE QUEIJO MINEIRADA 1KG", productCode: "PAO-001" })?.name).toBe("Receita padrão");
+  });
+
   it("calcula o consumo proporcional ao tamanho do lote", () => {
     const requirements = recipeRequirements({ batchSize: "100", ingredients: [{ materialCode: "POLVILHO", quantity: "40", unit: "kg" }] }, "250");
     expect(requirements[0].required).toBe(100);
