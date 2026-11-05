@@ -640,7 +640,7 @@ function ProductionOrdersPage({ data, setData, user, authorizeProductionOrder }:
 
     if (shouldStock) {
       const recipe = findRecipeForProduct(data.recipes, target) || data.recipes.find((item) =>
-        [item.product, item.productCode, item.productName].map(normalizeInventoryKey).includes(productKey),
+        [item.product, item.productCode, item.productName, item.name].map(normalizeInventoryKey).includes(productKey),
       );
       if (!recipe) {
         showToast(`Não foi possível concluir a OP ${target.number}: não existe receita vinculada ao produto ${target.product}.`);

@@ -24,7 +24,7 @@ export function findRecipeForProduct(recipes: InventoryRecipe[], product: unknow
   const targets = values.map(normalizeInventoryKey).filter(Boolean);
   if (!targets.length) return undefined;
   return recipes.find((recipe) =>
-    [recipe.product, recipe.productCode, recipe.productName]
+    [recipe.product, recipe.productCode, recipe.productName, recipe.name]
       .map(normalizeInventoryKey)
       .filter(Boolean)
       .some((key) => targets.some((target) => key === target || key.replace(/[^a-z0-9]/g, "") === target.replace(/[^a-z0-9]/g, ""))),

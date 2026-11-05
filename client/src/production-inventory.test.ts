@@ -13,6 +13,11 @@ describe("regras de estoque e ficha técnica", () => {
     expect(findRecipeForProduct([{ productCode: "PAO-001", name: "Receita" }], "pão-001")?.name).toBe("Receita");
   });
 
+  it("usa o nome da receita como vínculo legado quando o produto é genérico", () => {
+    const recipe = { product: "Produto cadastrado", name: "Pão de Queijo Mineirada 1KG" };
+    expect(findRecipeForProduct([recipe], "PÃO DE QUEIJO MINEIRADA 1KG")?.name).toBe("Pão de Queijo Mineirada 1KG");
+  });
+
   it("considera aliases canônicos persistidos na OP", () => {
     const recipe = { productCode: "PAO-001", productName: "Pão de Queijo Mineirada 1 KG", name: "Receita padrão" };
     expect(findRecipeForProduct([recipe], { product: "PÃO DE QUEIJO MINEIRADA 1KG", productCode: "PAO-001" })?.name).toBe("Receita padrão");
